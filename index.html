@@ -585,7 +585,7 @@
         <div class="cc-btn-lbl" id="flipLbl" style="display:none">Flip</div>
       </div>
       <div class="cc-with-lbl">
-        <button class="cc-btn end" onclick="window.commCallRoomId ? window.commEndCall() : window.endCall()">📞</button>
+        <button class="cc-btn end" onclick="(window.commCallRoomId ? window.commEndCall() : window.endCall())">📞</button>
         <div class="cc-btn-lbl">End</div>
       </div>
       <div class="cc-with-lbl">
@@ -1704,8 +1704,8 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     const roomId = commRoomId(commUid, peerUid);
     const msgPath = `community_chats/${roomId}/messages`;
 
-    // Properly detach the PREVIOUS chat's listener before attaching a new one
-    if(commUnsubChat){ try{ off(ref(rtdb, msgPath)); commUnsubChat(); }catch(e){} commUnsubChat=null; }
+    // Properly detach the PREVIOUS chat's listener using its real unsubscribe function
+    if(commUnsubChat){ try{ commUnsubChat(); }catch(e){} commUnsubChat=null; }
 
     commUnsubChat = onValue(ref(rtdb, msgPath), snap=>{
       try{
@@ -1781,26 +1781,42 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     const roomId = commRoomId(commUid, commCurrentPeer.uid);
     const now = Date.now();
 
+    // 1) Save the actual message FIRST and independently — this must succeed
+    //    even if the metadata writes below fail for any reason.
     try{
       await push(ref(rtdb, `community_chats/${roomId}/messages`), {
         from: commUid, text, ts: now
       });
-      // Update contact metadata for both users (for chat list + admin monitoring)
-      await set(ref(rtdb, `community_meta/${commUid}/contacts/${commCurrentPeer.uid}`), {
-        otherName: commCurrentPeer.name, otherUname: commCurrentPeer.username,
+    }catch(e){
+      toast('❌ Message পাঠানো যায়নি: '+(e.message||'Unknown error'));
+      console.error('commSendMsg: message push failed', e);
+      return;
+    }
+
+    // 2) Update contact metadata for both users — run independently so a failure
+    //    on one path (e.g. receiver's node) doesn't block the other or hide an error.
+    const metaResults = await Promise.allSettled([
+      set(ref(rtdb, `community_meta/${commUid}/contacts/${commCurrentPeer.uid}`), {
+        otherName: commCurrentPeer.name||'', otherUname: commCurrentPeer.username||'',
         lastMsg: text, lastTs: now
-      });
-      await set(ref(rtdb, `community_meta/${commCurrentPeer.uid}/contacts/${commUid}`), {
-        otherName: commProfile.name, otherUname: commProfile.username,
+      }),
+      set(ref(rtdb, `community_meta/${commCurrentPeer.uid}/contacts/${commUid}`), {
+        otherName: (commProfile&&commProfile.name)||'', otherUname: (commProfile&&commProfile.username)||'',
         lastMsg: text, lastTs: now
-      });
-      // Admin monitoring log
-      push(ref(rtdb, `community_admin_log`), {
-        from: commProfile.name, fromUname: commProfile.username,
-        to: commCurrentPeer.name, toUname: commCurrentPeer.username,
-        text, ts: now
-      }).catch(()=>{});
-    }catch(e){ toast('❌ Message পাঠানো যায়নি'); }
+      })
+    ]);
+    metaResults.forEach((r,i)=>{
+      if(r.status==='rejected'){
+        console.error(`commSendMsg: metadata write ${i===0?'(sender)':'(receiver)'} failed`, r.reason);
+      }
+    });
+
+    // 3) Admin monitoring log — best-effort, never blocks the chat itself
+    push(ref(rtdb, `community_admin_log`), {
+      from: (commProfile&&commProfile.name)||'', fromUname: (commProfile&&commProfile.username)||'',
+      to: commCurrentPeer.name||'', toUname: commCurrentPeer.username||'',
+      text, ts: now
+    }).catch(e=>console.error('commSendMsg: admin log failed', e));
   };
 
   /* ── Community chat: Photo/Video upload (reuses Cloudinary, same as personal chat) ── */
@@ -1845,27 +1861,41 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
           const url = res.secure_url;
           const roomId = commRoomId(commUid, commCurrentPeer.uid);
           const now = Date.now();
+          const lastMsgLabel = isVideo ? '📹 Video' : '📷 Photo';
 
+          // 1) Save the actual message FIRST and independently
           try{
             await push(ref(rtdb, `community_chats/${roomId}/messages`), {
               from: commUid, type: isVideo?'video':'image', mediaUrl: url, text:'', ts: now
             });
-            const lastMsgLabel = isVideo ? '📹 Video' : '📷 Photo';
-            await set(ref(rtdb, `community_meta/${commUid}/contacts/${commCurrentPeer.uid}`), {
-              otherName: commCurrentPeer.name, otherUname: commCurrentPeer.username,
+          }catch(e){
+            toast('❌ Message সেভ করা যায়নি: '+(e.message||'Unknown error'));
+            console.error('commHandleFileSelect: message push failed', e);
+            return;
+          }
+
+          // 2) Metadata writes — independent, won't hide each other's errors
+          const metaResults = await Promise.allSettled([
+            set(ref(rtdb, `community_meta/${commUid}/contacts/${commCurrentPeer.uid}`), {
+              otherName: commCurrentPeer.name||'', otherUname: commCurrentPeer.username||'',
               lastMsg: lastMsgLabel, lastTs: now
-            });
-            await set(ref(rtdb, `community_meta/${commCurrentPeer.uid}/contacts/${commUid}`), {
-              otherName: commProfile.name, otherUname: commProfile.username,
+            }),
+            set(ref(rtdb, `community_meta/${commCurrentPeer.uid}/contacts/${commUid}`), {
+              otherName: (commProfile&&commProfile.name)||'', otherUname: (commProfile&&commProfile.username)||'',
               lastMsg: lastMsgLabel, lastTs: now
-            });
-            push(ref(rtdb, `community_admin_log`), {
-              from: commProfile.name, fromUname: commProfile.username,
-              to: commCurrentPeer.name, toUname: commCurrentPeer.username,
-              text: `[${lastMsgLabel} পাঠিয়েছেন]`, ts: now
-            }).catch(()=>{});
-            toast('✅ পাঠানো হয়েছে!');
-          }catch(e){ toast('❌ Message সেভ করা যায়নি'); }
+            })
+          ]);
+          metaResults.forEach((r,i)=>{
+            if(r.status==='rejected') console.error(`commHandleFileSelect: metadata write ${i===0?'(sender)':'(receiver)'} failed`, r.reason);
+          });
+
+          push(ref(rtdb, `community_admin_log`), {
+            from: (commProfile&&commProfile.name)||'', fromUname: (commProfile&&commProfile.username)||'',
+            to: commCurrentPeer.name||'', toUname: commCurrentPeer.username||'',
+            text: `[${lastMsgLabel} পাঠিয়েছেন]`, ts: now
+          }).catch(e=>console.error('commHandleFileSelect: admin log failed', e));
+
+          toast('✅ পাঠানো হয়েছে!');
         } else {
           toast('❌ Upload failed হয়েছে');
         }
@@ -1880,9 +1910,10 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   let commPC=null, commLocalStream=null, commCallType='audio', commCallRoomId=null;
   let commUnsubCallDoc=null, commUnsubPeerCands=null;
   let commPendingPeerCands=[], commRemoteDescSet=false, commIsCaller=false;
-  // Expose on window so shared call-control buttons (mute/cam/flip/screenshare) can detect active community call
+  // Expose on window so shared call-control buttons (mute/cam/flip/screenshare/end) can detect active community call
   Object.defineProperty(window,'commPC',{get:()=>commPC,configurable:true});
   Object.defineProperty(window,'commLocalStream',{get:()=>commLocalStream,configurable:true});
+  Object.defineProperty(window,'commCallRoomId',{get:()=>commCallRoomId,configurable:true});
 
   function commCallRef(roomId){ return ref(rtdb, `community_calls/${roomId}`); }
 
