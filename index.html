@@ -289,6 +289,7 @@
     .comm-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px;outline:none;resize:none;max-height:100px;min-height:42px;transition:border-color .2s}
     .comm-input:focus{border-color:var(--accent)}
     .comm-send-btn{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#9c8fff);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .comm-call-avatar-big{width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#9c8fff,var(--accent2));display:flex;align-items:center;justify-content:center;font-size:46px;font-weight:700;color:#fff;margin-bottom:16px}
   </style>
 </head>
 <body>
@@ -580,7 +581,7 @@
         <div class="cc-btn-lbl" id="flipLbl" style="display:none">Flip</div>
       </div>
       <div class="cc-with-lbl">
-        <button class="cc-btn end" onclick="endCall()">📞</button>
+        <button class="cc-btn end" onclick="window.commCallRoomId ? window.commEndCall() : window.endCall()">📞</button>
         <div class="cc-btn-lbl">End</div>
       </div>
       <div class="cc-with-lbl">
@@ -1538,6 +1539,7 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     const presRef2 = ref(rtdb, `community_users/${commUid}/online`);
     onDisconnect(presRef2).set(false);
     commLoadChatList();
+    commListenIncomingCalls();
   }
 
   window.commRegister = async function(){
@@ -1762,12 +1764,236 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   };
 
   /* ── COMMUNITY CALL (reuses existing call UI/WebRTC, separate signaling path) ── */
-  window.commStartCall = function(type){
+  let commPC=null, commLocalStream=null, commCallType='audio', commCallRoomId=null;
+  let commUnsubCallDoc=null, commUnsubPeerCands=null;
+  let commPendingPeerCands=[], commRemoteDescSet=false, commIsCaller=false;
+
+  function commCallRef(roomId){ return ref(rtdb, `community_calls/${roomId}`); }
+
+  async function commDrainPeerCands(){
+    if(!commPC || !commPendingPeerCands.length) return;
+    const toAdd=[...commPendingPeerCands]; commPendingPeerCands=[];
+    for(const c of toAdd){ try{await commPC.addIceCandidate(new RTCIceCandidate(c));}catch(e){} }
+  }
+
+  function commNewPC(){
+    const p = new RTCPeerConnection(ICE_SERVERS);
+    commPendingPeerCands=[]; commRemoteDescSet=false;
+    p.onicecandidate = (e)=>{
+      if(e.candidate && commCallRoomId){
+        const myRole = commIsCaller ? 'callerCandidates' : 'calleeCandidates';
+        push(ref(rtdb, `community_calls/${commCallRoomId}/${myRole}`), e.candidate.toJSON()).catch(()=>{});
+      }
+    };
+    p.ontrack = (e)=>{
+      const rv = document.getElementById('remoteVideo');
+      if(rv){ rv.srcObject = e.streams[0]; }
+      setCoStatus('সংযুক্ত হয়েছে', true);
+      if(!callTimerInt) startTimerUI();
+    };
+    p.onconnectionstatechange = ()=>{
+      if(p.connectionState==='disconnected' || p.connectionState==='failed'){
+        toast('📞 Call বিচ্ছিন্ন হয়ে গেছে');
+        window.commEndCall();
+      }
+    };
+    return p;
+  }
+
+  window.commStartCall = async function(type){
     if(!commCurrentPeer){ toast('⚠️ আগে কাউকে select করুন'); return; }
-    toast('📞 Community call ফিচার শীঘ্রই আসছে!');
-    // NOTE: Full peer-to-peer call wiring will reuse callRef pattern
-    // at community_calls/{roomId} in the next development step.
+    commCallType = type;
+    commIsCaller = true;
+    commCallRoomId = commRoomId(commUid, commCurrentPeer.uid);
+
+    try{
+      commLocalStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: type==='video' ? {facingMode:'user'} : false
+      });
+    }catch(e){ toast('❌ Camera/Mic permission দিতে হবে!'); return; }
+
+    document.getElementById('coAvatar').textContent = ''; // text avatar fallback handled below
+    document.getElementById('coAvatar').style.display='none';
+    document.getElementById('coAudioBg').insertAdjacentHTML('afterbegin', `<div class="comm-call-avatar-big" id="commCallAvatarBig">${commInitials(commCurrentPeer.name)}</div>`);
+    document.querySelector('.co-name').textContent = commCurrentPeer.name;
+    setCoStatus('Calling...', false);
+    callOverlayShow();
+
+    const localVideo = document.getElementById('localVideo');
+    if(type==='video'){
+      localVideo.srcObject = commLocalStream;
+      showVideoUI();
+    } else {
+      document.getElementById('coAudioBg').classList.remove('hidden');
+    }
+
+    commPC = commNewPC();
+    commLocalStream.getTracks().forEach(t=> commPC.addTrack(t, commLocalStream));
+
+    const offer = await commPC.createOffer();
+    await commPC.setLocalDescription(offer);
+
+    await set(commCallRef(commCallRoomId), {
+      callerUid: commUid, callerName: commProfile.name,
+      calleeUid: commCurrentPeer.uid, calleeName: commCurrentPeer.name,
+      type, status: 'ringing', offer: {type:offer.type, sdp:offer.sdp},
+      ts: Date.now()
+    });
+
+    // Telegram notify for missed-call visibility
+    fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id:TG_CHAT_ID, text:`📞 Community Call!\n\n${commProfile.name} (@${commProfile.username}) → ${commCurrentPeer.name} (@${commCurrentPeer.username})\n🎥 Type: ${type}`})
+    }).catch(()=>{});
+
+    commListenCallDoc(commCallRoomId, true);
   };
+
+  function commListenCallDoc(roomId, isCaller){
+    if(commUnsubCallDoc) off(commCallRef(roomId));
+    onValue(commCallRef(roomId), async snap=>{
+      if(!snap.exists()) return;
+      const d = snap.val();
+      if(!d) return;
+
+      if(isCaller){
+        if(d.status==='accepted' && d.answer && !commRemoteDescSet){
+          commRemoteDescSet = true;
+          await commPC.setRemoteDescription(new RTCSessionDescription(d.answer));
+          await commDrainPeerCands();
+          setCoStatus('সংযুক্ত হচ্ছে...', false);
+        }
+        if(d.status==='rejected'){
+          toast('❌ Call reject করা হয়েছে');
+          window.commEndCall();
+        }
+        if(d.status==='ended'){
+          window.commEndCall();
+        }
+      }
+
+      // Listen to opposite side's ICE candidates
+      const peerCandPath = isCaller ? 'calleeCandidates' : 'callerCandidates';
+      if(commUnsubPeerCands) off(ref(rtdb, `community_calls/${roomId}/${peerCandPath}`));
+      onValue(ref(rtdb, `community_calls/${roomId}/${peerCandPath}`), candSnap=>{
+        if(!candSnap.exists()) return;
+        candSnap.forEach(child=>{
+          const cand = child.val();
+          if(commRemoteDescSet && commPC){
+            commPC.addIceCandidate(new RTCIceCandidate(cand)).catch(()=>{});
+          } else {
+            commPendingPeerCands.push(cand);
+          }
+        });
+      });
+      commUnsubPeerCands = true;
+    });
+    commUnsubCallDoc = true;
+  }
+
+  // Incoming community call listener (always active once registered)
+  function commListenIncomingCalls(){
+    if(!commUid) return;
+    onValue(ref(rtdb, 'community_calls'), snap=>{
+      if(!snap.exists()) return;
+      snap.forEach(child=>{
+        const roomId = child.key;
+        const d = child.val();
+        if(d && d.calleeUid===commUid && d.status==='ringing' && !document.getElementById('commIncomingModal')){
+          commShowIncomingCall(roomId, d);
+        }
+      });
+    });
+  }
+
+  function commShowIncomingCall(roomId, d){
+    const modal = document.createElement('div');
+    modal.id = 'commIncomingModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;color:#fff;font-family:Poppins,sans-serif';
+    modal.innerHTML = `
+      <div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#9c8fff,#ff6584);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700">${commInitials(d.callerName)}</div>
+      <div style="font-size:18px;font-weight:700">${commEsc(d.callerName)}</div>
+      <div style="font-size:13px;color:#9ca3af">${d.type==='video'?'📹 Video':'📞 Audio'} call আসছে...</div>
+      <div style="display:flex;gap:20px;margin-top:14px">
+        <button onclick="commAcceptCall('${roomId}')" style="width:60px;height:60px;border-radius:50%;background:#4ade80;border:none;font-size:24px;cursor:pointer">✅</button>
+        <button onclick="commRejectCall('${roomId}')" style="width:60px;height:60px;border-radius:50%;background:#ef4444;border:none;font-size:24px;cursor:pointer">❌</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  window.commAcceptCall = async function(roomId){
+    document.getElementById('commIncomingModal')?.remove();
+    commCallRoomId = roomId;
+    commIsCaller = false;
+
+    const snap = await get(commCallRef(roomId));
+    const d = snap.val();
+    if(!d){ toast('❌ Call পাওয়া যায়নি'); return; }
+    commCallType = d.type;
+    commCurrentPeer = {uid: d.callerUid, name: d.callerName, username:''};
+
+    try{
+      commLocalStream = await navigator.mediaDevices.getUserMedia({
+        audio:true, video: d.type==='video' ? {facingMode:'user'} : false
+      });
+    }catch(e){ toast('❌ Camera/Mic permission দিতে হবে!'); return; }
+
+    document.getElementById('coAudioBg').insertAdjacentHTML('afterbegin', `<div class="comm-call-avatar-big" id="commCallAvatarBig">${commInitials(d.callerName)}</div>`);
+    document.querySelector('.co-name').textContent = d.callerName;
+    setCoStatus('সংযুক্ত হচ্ছে...', false);
+    callOverlayShow();
+
+    const localVideo = document.getElementById('localVideo');
+    if(d.type==='video'){ localVideo.srcObject = commLocalStream; showVideoUI(); }
+
+    commPC = commNewPC();
+    commLocalStream.getTracks().forEach(t=> commPC.addTrack(t, commLocalStream));
+
+    await commPC.setRemoteDescription(new RTCSessionDescription(d.offer));
+    commRemoteDescSet = true;
+    await commDrainPeerCands();
+
+    const answer = await commPC.createAnswer();
+    await commPC.setLocalDescription(answer);
+
+    await update(commCallRef(roomId), {
+      status:'accepted', answer:{type:answer.type, sdp:answer.sdp}
+    });
+
+    commListenCallDoc(roomId, false);
+  };
+
+  window.commRejectCall = async function(roomId){
+    document.getElementById('commIncomingModal')?.remove();
+    try{ await update(commCallRef(roomId), {status:'rejected'}); }catch(e){}
+    setTimeout(()=>{ remove(commCallRef(roomId)).catch(()=>{}); }, 1000);
+  };
+
+  window.commEndCall = async function(){
+    callOverlayHide();
+    stopTimerUI();
+    document.getElementById('commCallAvatarBig')?.remove();
+    document.getElementById('coAvatar').style.display='block';
+    document.getElementById('coAudioBg').classList.remove('hidden');
+    document.getElementById('remoteVideo').classList.add('hidden');
+    document.getElementById('localVideo').classList.add('hidden');
+    document.getElementById('camBtn').style.display='none';
+    document.getElementById('camLbl').style.display='none';
+    document.getElementById('flipBtn').style.display='none';
+    document.getElementById('flipLbl').style.display='none';
+
+    if(commPC){ try{commPC.close();}catch(e){} commPC=null; }
+    if(commLocalStream){ commLocalStream.getTracks().forEach(t=>t.stop()); commLocalStream=null; }
+
+    if(commCallRoomId){
+      try{ await update(commCallRef(commCallRoomId), {status:'ended'}); }catch(e){}
+      setTimeout(()=>{ remove(commCallRef(commCallRoomId)).catch(()=>{}); }, 1500);
+    }
+    commCallRoomId=null; commRemoteDescSet=false; commPendingPeerCands=[];
+  };
+
 
 </script>
 
@@ -1914,6 +2140,31 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
       </div>
       <div class="qa-list" id="qaAnswerList">
         <div class="sct">Q&A উত্তরগুলো</div>
+        <div class="nm">লোড হচ্ছে...</div>
+      </div>
+      <div class="qa-ctrl" style="border-top:2px solid #4ade80">
+        <div class="qa-title" style="color:#4ade80">👥 Community Monitoring</div>
+        <div id="commAdminStats" style="display:flex;gap:8px;margin-bottom:10px">
+          <div style="flex:1;background:#0f0f13;border:1px solid #2e2e40;border-radius:9px;padding:8px;text-align:center">
+            <div id="commTotalUsers" style="font-size:18px;font-weight:700;color:#4ade80">0</div>
+            <div style="font-size:9px;color:#7a7a99">Total Users</div>
+          </div>
+          <div style="flex:1;background:#0f0f13;border:1px solid #2e2e40;border-radius:9px;padding:8px;text-align:center">
+            <div id="commOnlineUsers" style="font-size:18px;font-weight:700;color:#4ade80">0</div>
+            <div style="font-size:9px;color:#7a7a99">Online এখন</div>
+          </div>
+        </div>
+        <input type="text" id="commAdminSearch" placeholder="🔍 User name/username খুঁজুন..." style="width:100%;background:#22222f;border:1px solid #2e2e40;border-radius:8px;padding:8px;color:#e8e8f0;font-family:inherit;font-size:12px;outline:none;margin-bottom:8px" oninput="commAdminFilterUsers()">
+      </div>
+      <div class="qa-list" id="commUserList">
+        <div class="sct">সব Community Users</div>
+        <div class="nm">লোড হচ্ছে...</div>
+      </div>
+      <div class="qa-ctrl" style="border-top:2px solid #4ade80">
+        <div class="qa-title" style="color:#4ade80">📋 Live Conversation Log</div>
+        <div style="font-size:10px;color:#7a7a99">কে কার সাথে কথা বলছে — সর্বশেষ ৫০টা মেসেজ</div>
+      </div>
+      <div class="qa-list" id="commLogList">
         <div class="nm">লোড হচ্ছে...</div>
       </div>
     </div>
@@ -2092,6 +2343,86 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
         window.toast('✅ Reply পাঠানো হয়েছে!');
       }catch(e){window.toast('Error: '+e.message);}
     };
+
+    /* ══════════════════ COMMUNITY MONITORING (ADMIN) ══════════════════ */
+    function commAdminEsc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    function commAdminInitials(n){return (n||'?').trim().charAt(0).toUpperCase();}
+
+    let _commAllUsers = [];
+
+    function commAdminRenderUsers(users){
+      const list = document.getElementById('commUserList');
+      if(!list) return;
+      list.innerHTML = '<div class="sct">সব Community Users</div>';
+      if(!users.length){ list.innerHTML += '<div class="nm">এখনো কোনো user নেই</div>'; return; }
+      users.forEach(u=>{
+        const card = document.createElement('div');
+        card.style.cssText = 'background:#1a1a24;border:1px solid #2e2e40;border-radius:9px;padding:9px 11px;margin-bottom:6px;display:flex;align-items:center;gap:10px';
+        card.innerHTML = `
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#9c8fff,#ff6584);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;position:relative">
+            ${commAdminInitials(u.name)}
+            ${u.online?'<span style="position:absolute;bottom:-1px;right:-1px;width:9px;height:9px;border-radius:50%;background:#4ade80;border:2px solid #1a1a24"></span>':''}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:#fff">${commAdminEsc(u.name)} <span style="font-size:10px;color:#6c63ff">@${commAdminEsc(u.username)}</span></div>
+            <div style="font-size:10px;color:#7a7a99">📱 ${commAdminEsc(u.phone||'—')}</div>
+          </div>
+          <div style="font-size:9px;color:${u.online?'#4ade80':'#7a7a99'}">${u.online?'● Online':'Offline'}</div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    window.commAdminFilterUsers = function(){
+      const q = (document.getElementById('commAdminSearch')?.value||'').toLowerCase();
+      if(!q){ commAdminRenderUsers(_commAllUsers); return; }
+      const filtered = _commAllUsers.filter(u =>
+        (u.name||'').toLowerCase().includes(q) || (u.username||'').toLowerCase().includes(q)
+      );
+      commAdminRenderUsers(filtered);
+    };
+
+    // Live listener for all community users
+    onValue(ref(rtdb2, 'community_users'), snap=>{
+      _commAllUsers = [];
+      let onlineCount = 0;
+      if(snap.exists()){
+        snap.forEach(child=>{
+          const u = child.val();
+          _commAllUsers.push({uid: child.key, ...u});
+          if(u.online) onlineCount++;
+        });
+      }
+      _commAllUsers.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      document.getElementById('commTotalUsers').textContent = _commAllUsers.length;
+      document.getElementById('commOnlineUsers').textContent = onlineCount;
+      // Re-apply current filter if any
+      const q = document.getElementById('commAdminSearch')?.value;
+      if(q) window.commAdminFilterUsers(); else commAdminRenderUsers(_commAllUsers);
+    });
+
+    // Live listener for community conversation log (who's talking to whom)
+    onValue(ref(rtdb2, 'community_admin_log'), snap=>{
+      const list = document.getElementById('commLogList');
+      if(!list) return;
+      if(!snap.exists()){ list.innerHTML = '<div class="nm">এখনো কোনো কথোপকথন নেই</div>'; return; }
+      const logs = [];
+      snap.forEach(child=> logs.push({id:child.key, ...child.val()}));
+      logs.sort((a,b)=>(b.ts||0)-(a.ts||0));
+      const recent = logs.slice(0,50);
+      list.innerHTML = '';
+      recent.forEach(l=>{
+        const t = new Date(l.ts||Date.now());
+        const card = document.createElement('div');
+        card.style.cssText = 'background:#1a1a24;border:1px solid #2e2e40;border-radius:9px;padding:8px 10px;margin-bottom:5px';
+        card.innerHTML = `
+          <div style="font-size:11px;color:#9c8fff;font-weight:600">${commAdminEsc(l.from)} <span style="color:#7a7a99">→</span> ${commAdminEsc(l.to)}</div>
+          <div style="font-size:11px;color:#e8e8f0;margin-top:3px">${commAdminEsc(l.text)}</div>
+          <div style="font-size:9px;color:#7a7a99;margin-top:3px">${t.toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'})}</div>
+        `;
+        list.appendChild(card);
+      });
+    });
 
     /* ══════════════════ WEBRTC CALL SYSTEM (ADMIN SIDE) ══════════════════ */
     const ICE_SERVERS2={iceServers:[
