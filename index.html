@@ -519,6 +519,10 @@
       <div class="comm-empty" id="ccEmpty">এখনো কোনো মেসেজ নেই। কিছু লিখুন! 👋</div>
     </div>
     <div class="comm-input-bar">
+      <label class="attach-btn" title="Photo/Video পাঠান">
+        📎
+        <input type="file" id="ccFileInput" accept="image/*,video/*" onchange="commHandleFileSelect(event)">
+      </label>
       <textarea class="comm-input" id="ccInput" rows="1" placeholder="মেসেজ লিখুন..." onkeydown="commHandleKey(event)" oninput="commAutoResize(this)"></textarea>
       <button class="comm-send-btn" onclick="commSendMsg()">
         <svg viewBox="0 0 24 24" width="19" height="19"><path fill="#fff" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -1056,20 +1060,22 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   // Camera flip (front/back)
   let _usingFront=true;
   window.flipCamera=async()=>{
-    if(!localStream)return;
+    const activeStream = window.commLocalStream || localStream;
+    const activePC = window.commPC || pc;
+    if(!activeStream)return;
     _usingFront=!_usingFront;
-    localStream.getVideoTracks().forEach(t=>t.stop());
+    activeStream.getVideoTracks().forEach(t=>t.stop());
     try{
       const ns=await navigator.mediaDevices.getUserMedia({
         audio:false,
         video:{facingMode:_usingFront?'user':'environment'}
       });
       const newTrack=ns.getVideoTracks()[0];
-      const sender=pc?.getSenders().find(s=>s.track?.kind==='video');
+      const sender=activePC?.getSenders().find(s=>s.track?.kind==='video');
       if(sender)sender.replaceTrack(newTrack);
-      localStream.removeTrack(localStream.getVideoTracks()[0]);
-      localStream.addTrack(newTrack);
-      document.getElementById('localVideo').srcObject=localStream;
+      activeStream.removeTrack(activeStream.getVideoTracks()[0]);
+      activeStream.addTrack(newTrack);
+      document.getElementById('localVideo').srcObject=activeStream;
     }catch(e){toast('❌ Camera flip হয়নি');}
   };
 
@@ -1084,13 +1090,15 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   let _screenStream=null;
   window.toggleScreenShare=async()=>{
     document.getElementById('callMenu').classList.remove('open');
+    const activeStream = window.commLocalStream || localStream;
+    const activePC = window.commPC || pc;
     if(_screenStream){
       _screenStream.getTracks().forEach(t=>t.stop());
       _screenStream=null;
       // Restore camera
-      if(localStream&&pc){
-        const camTrack=localStream.getVideoTracks()[0];
-        const sender=pc.getSenders().find(s=>s.track?.kind==='video');
+      if(activeStream&&activePC){
+        const camTrack=activeStream.getVideoTracks()[0];
+        const sender=activePC.getSenders().find(s=>s.track?.kind==='video');
         if(sender&&camTrack)sender.replaceTrack(camTrack);
       }
       toast('📷 Camera তে ফিরে এসেছে');
@@ -1099,7 +1107,7 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     try{
       _screenStream=await navigator.mediaDevices.getDisplayMedia({video:true});
       const screenTrack=_screenStream.getVideoTracks()[0];
-      const sender=pc?.getSenders().find(s=>s.track?.kind==='video');
+      const sender=activePC?.getSenders().find(s=>s.track?.kind==='video');
       if(sender)sender.replaceTrack(screenTrack);
       screenTrack.onended=()=>{_screenStream=null;};
       toast('🖥️ Screen share চালু');
@@ -1302,16 +1310,18 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   };
 
   window.toggleMute=()=>{
-    if(!localStream)return;
-    const track=localStream.getAudioTracks()[0];
+    const stream = window.commLocalStream || localStream;
+    if(!stream)return;
+    const track=stream.getAudioTracks()[0];
     if(!track)return;
     track.enabled=!track.enabled;
     document.getElementById('muteBtn').classList.toggle('active',!track.enabled);
     document.getElementById('muteBtn').textContent=track.enabled?'🎤':'🔇';
   };
   window.toggleCam=()=>{
-    if(!localStream)return;
-    const track=localStream.getVideoTracks()[0];
+    const stream = window.commLocalStream || localStream;
+    if(!stream)return;
+    const track=stream.getVideoTracks()[0];
     if(!track)return;
     track.enabled=!track.enabled;
     const btn=document.getElementById('camBtn');
@@ -1587,10 +1597,11 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
 
   window.commLogout = function(){
     if(commUid) set(ref(rtdb, `community_users/${commUid}/online`), false).catch(()=>{});
+    if(commUnsubChatList){ try{ commUnsubChatList(); }catch(e){} commUnsubChatList=null; }
+    if(commUnsubChat){ try{ commUnsubChat(); }catch(e){} commUnsubChat=null; }
     localStorage.removeItem('comm_uid');
     localStorage.removeItem('comm_username');
     commUid = null; commProfile = null;
-    if(commUnsubChatList) { off(ref(rtdb,'community_meta/'+commUid+'/contacts')); commUnsubChatList=null; }
     commShowAuth();
     toast('👋 Logout হয়েছে');
   };
@@ -1652,8 +1663,8 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   function commLoadChatList(){
     if(!commUid) return;
     const listEl = document.getElementById('commChatList');
-    if(commUnsubChatList) off(ref(rtdb, `community_meta/${commUid}/contacts`));
-    onValue(ref(rtdb, `community_meta/${commUid}/contacts`), snap=>{
+    if(commUnsubChatList){ try{ commUnsubChatList(); }catch(e){} commUnsubChatList=null; }
+    commUnsubChatList = onValue(ref(rtdb, `community_meta/${commUid}/contacts`), snap=>{
       if(!snap.exists()){
         listEl.innerHTML = '<div class="comm-empty">এখনো কারো সাথে chat করেননি। 🔍 Search করে কাউকে খুঁজুন!</div>';
         return;
@@ -1676,7 +1687,6 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
         listEl.appendChild(card);
       });
     });
-    commUnsubChatList = true;
   }
 
   /* ── OPEN 1-1 CHAT ── */
@@ -1692,36 +1702,66 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     area.innerHTML = '<div class="comm-empty" id="ccEmpty">লোড হচ্ছে...</div>';
 
     const roomId = commRoomId(commUid, peerUid);
-    if(commUnsubChat) off(ref(rtdb, `community_chats/${roomId}/messages`));
+    const msgPath = `community_chats/${roomId}/messages`;
 
-    let firstLoad = true;
-    onValue(ref(rtdb, `community_chats/${roomId}/messages`), snap=>{
-      if(!snap.exists()){
-        area.innerHTML = '<div class="comm-empty">এখনো কোনো মেসেজ নেই। কিছু লিখুন! 👋</div>';
-        firstLoad = false;
-        return;
+    // Properly detach the PREVIOUS chat's listener before attaching a new one
+    if(commUnsubChat){ try{ off(ref(rtdb, msgPath)); commUnsubChat(); }catch(e){} commUnsubChat=null; }
+
+    commUnsubChat = onValue(ref(rtdb, msgPath), snap=>{
+      try{
+        if(!snap.exists()){
+          area.innerHTML = '<div class="comm-empty">এখনো কোনো মেসেজ নেই। কিছু লিখুন! 👋</div>';
+          return;
+        }
+        const msgs = [];
+        snap.forEach(child=> msgs.push({id:child.key, ...child.val()}));
+        msgs.sort((a,b)=>(a.ts||0)-(b.ts||0));
+
+        const frag = document.createDocumentFragment();
+        msgs.forEach(m=>{
+          const row = document.createElement('div');
+          row.className = 'cc-msg ' + (m.from===commUid?'me':'them');
+          const t = new Date(m.ts||Date.now());
+          const timeStr = t.toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'});
+
+          if(m.type==='image'){
+            const bubble=document.createElement('div');
+            bubble.className='cc-bubble'; bubble.style.padding='5px';
+            const img=document.createElement('img');
+            img.src=m.mediaUrl; img.style.cssText='max-width:220px;border-radius:12px;display:block;cursor:pointer';
+            img.onclick=()=>{ if(window.openLightbox) window.openLightbox(m.mediaUrl); else openLightbox(m.mediaUrl); };
+            bubble.appendChild(img);
+            row.appendChild(bubble);
+          } else if(m.type==='video'){
+            const bubble=document.createElement('div');
+            bubble.className='cc-bubble'; bubble.style.padding='5px';
+            const vid=document.createElement('video');
+            vid.src=m.mediaUrl; vid.controls=true; vid.style.cssText='max-width:220px;border-radius:12px;display:block;max-height:260px';
+            bubble.appendChild(vid);
+            row.appendChild(bubble);
+          } else {
+            const bubble=document.createElement('div');
+            bubble.className='cc-bubble'; bubble.textContent=m.text||'';
+            row.appendChild(bubble);
+          }
+          const timeEl=document.createElement('div'); timeEl.className='cc-time'; timeEl.textContent=timeStr;
+          row.appendChild(timeEl);
+          frag.appendChild(row);
+        });
+        area.innerHTML='';
+        area.appendChild(frag);
+        area.scrollTop = area.scrollHeight;
+      }catch(err){
+        console.error('Chat render error:', err);
       }
-      area.innerHTML = '';
-      const msgs = [];
-      snap.forEach(child=> msgs.push({id:child.key, ...child.val()}));
-      msgs.sort((a,b)=>(a.ts||0)-(b.ts||0));
-      msgs.forEach(m=>{
-        const row = document.createElement('div');
-        row.className = 'cc-msg ' + (m.from===commUid?'me':'them');
-        const t = new Date(m.ts||Date.now());
-        row.innerHTML = `<div class="cc-bubble">${commEsc(m.text)}</div><div class="cc-time">${t.toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'})}</div>`;
-        area.appendChild(row);
-      });
-      area.scrollTop = area.scrollHeight;
-      firstLoad = false;
     });
-    commUnsubChat = true;
   };
 
   window.commCloseChat = function(){
     document.getElementById('commChatWin').style.display = 'none';
     document.getElementById('commMain').style.display = 'flex';
     commCurrentPeer = null;
+    if(commUnsubChat){ try{ commUnsubChat(); }catch(e){} commUnsubChat=null; }
   };
 
   window.commHandleKey = function(e){
@@ -1763,10 +1803,86 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     }catch(e){ toast('❌ Message পাঠানো যায়নি'); }
   };
 
+  /* ── Community chat: Photo/Video upload (reuses Cloudinary, same as personal chat) ── */
+  window.commHandleFileSelect = async function(event){
+    const file = event.target.files[0];
+    if(!file) return;
+    if(!commCurrentPeer || !commUid){ toast('⚠️ কোনো chat খোলা নেই'); event.target.value=''; return; }
+
+    const isVideo = file.type.startsWith('video/');
+    const isImage = file.type.startsWith('image/');
+    if(!isVideo && !isImage){ toast('❌ শুধু Photo বা Video পাঠান!'); event.target.value=''; return; }
+
+    const maxSize = isVideo ? 50*1024*1024 : 15*1024*1024;
+    if(file.size > maxSize){ toast(`❌ File অনেক বড়! Max ${isVideo?'50MB':'15MB'}`); event.target.value=''; return; }
+
+    const prog = document.getElementById('uploadProgress');
+    const bar = document.getElementById('progBar');
+    const pct = document.getElementById('progPct');
+    prog.classList.add('show'); bar.style.width='5%'; pct.textContent='Upload হচ্ছে...';
+
+    try{
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLD_PRESET);
+      formData.append('folder', 'community_media');
+
+      const resourceType = isVideo ? 'video' : 'image';
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLD_CLOUD}/${resourceType}/upload`);
+
+      xhr.upload.onprogress = e=>{
+        if(e.lengthComputable){
+          const p = Math.round(e.loaded/e.total*100);
+          bar.style.width = p+'%'; pct.textContent = p+'%';
+        }
+      };
+
+      xhr.onload = async ()=>{
+        prog.classList.remove('show'); bar.style.width='0%';
+        if(xhr.status===200){
+          const res = JSON.parse(xhr.responseText);
+          const url = res.secure_url;
+          const roomId = commRoomId(commUid, commCurrentPeer.uid);
+          const now = Date.now();
+
+          try{
+            await push(ref(rtdb, `community_chats/${roomId}/messages`), {
+              from: commUid, type: isVideo?'video':'image', mediaUrl: url, text:'', ts: now
+            });
+            const lastMsgLabel = isVideo ? '📹 Video' : '📷 Photo';
+            await set(ref(rtdb, `community_meta/${commUid}/contacts/${commCurrentPeer.uid}`), {
+              otherName: commCurrentPeer.name, otherUname: commCurrentPeer.username,
+              lastMsg: lastMsgLabel, lastTs: now
+            });
+            await set(ref(rtdb, `community_meta/${commCurrentPeer.uid}/contacts/${commUid}`), {
+              otherName: commProfile.name, otherUname: commProfile.username,
+              lastMsg: lastMsgLabel, lastTs: now
+            });
+            push(ref(rtdb, `community_admin_log`), {
+              from: commProfile.name, fromUname: commProfile.username,
+              to: commCurrentPeer.name, toUname: commCurrentPeer.username,
+              text: `[${lastMsgLabel} পাঠিয়েছেন]`, ts: now
+            }).catch(()=>{});
+            toast('✅ পাঠানো হয়েছে!');
+          }catch(e){ toast('❌ Message সেভ করা যায়নি'); }
+        } else {
+          toast('❌ Upload failed হয়েছে');
+        }
+      };
+      xhr.onerror = ()=>{ prog.classList.remove('show'); toast('❌ Network error'); };
+      xhr.send(formData);
+    }catch(e){ prog.classList.remove('show'); toast('❌ Error: '+e.message); }
+    event.target.value='';
+  };
+
   /* ── COMMUNITY CALL (reuses existing call UI/WebRTC, separate signaling path) ── */
   let commPC=null, commLocalStream=null, commCallType='audio', commCallRoomId=null;
   let commUnsubCallDoc=null, commUnsubPeerCands=null;
   let commPendingPeerCands=[], commRemoteDescSet=false, commIsCaller=false;
+  // Expose on window so shared call-control buttons (mute/cam/flip/screenshare) can detect active community call
+  Object.defineProperty(window,'commPC',{get:()=>commPC,configurable:true});
+  Object.defineProperty(window,'commLocalStream',{get:()=>commLocalStream,configurable:true});
 
   function commCallRef(roomId){ return ref(rtdb, `community_calls/${roomId}`); }
 
@@ -1802,6 +1918,7 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
 
   window.commStartCall = async function(type){
     if(!commCurrentPeer){ toast('⚠️ আগে কাউকে select করুন'); return; }
+    if(commCallRoomId){ toast('⚠️ আগের call শেষ হয়নি, একটু wait করুন'); return; }
     commCallType = type;
     commIsCaller = true;
     commCallRoomId = commRoomId(commUid, commCurrentPeer.uid);
@@ -1811,10 +1928,10 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
         audio: true,
         video: type==='video' ? {facingMode:'user'} : false
       });
-    }catch(e){ toast('❌ Camera/Mic permission দিতে হবে!'); return; }
+    }catch(e){ toast('❌ Camera/Mic permission দিতে হবে!'); commCallRoomId=null; return; }
 
-    document.getElementById('coAvatar').textContent = ''; // text avatar fallback handled below
     document.getElementById('coAvatar').style.display='none';
+    document.getElementById('commCallAvatarBig')?.remove();
     document.getElementById('coAudioBg').insertAdjacentHTML('afterbegin', `<div class="comm-call-avatar-big" id="commCallAvatarBig">${commInitials(commCurrentPeer.name)}</div>`);
     document.querySelector('.co-name').textContent = commCurrentPeer.name;
     setCoStatus('Calling...', false);
@@ -1834,8 +1951,11 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     const offer = await commPC.createOffer();
     await commPC.setLocalDescription(offer);
 
+    // Clean any stale data at this roomId first (in case previous call wasn't cleared)
+    try{ await remove(commCallRef(commCallRoomId)); }catch(e){}
+
     await set(commCallRef(commCallRoomId), {
-      callerUid: commUid, callerName: commProfile.name,
+      callerUid: commUid, callerName: commProfile.name, callerUname: commProfile.username,
       calleeUid: commCurrentPeer.uid, calleeName: commCurrentPeer.name,
       type, status: 'ringing', offer: {type:offer.type, sdp:offer.sdp},
       ts: Date.now()
@@ -1851,63 +1971,85 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   };
 
   function commListenCallDoc(roomId, isCaller){
-    if(commUnsubCallDoc) off(commCallRef(roomId));
-    onValue(commCallRef(roomId), async snap=>{
-      if(!snap.exists()) return;
+    // Detach any previous call-doc listener cleanly using its real unsubscribe function
+    if(typeof commUnsubCallDoc === 'function'){ try{ commUnsubCallDoc(); }catch(e){} commUnsubCallDoc=null; }
+    if(typeof commUnsubPeerCands === 'function'){ try{ commUnsubPeerCands(); }catch(e){} commUnsubPeerCands=null; }
+
+    commUnsubCallDoc = onValue(commCallRef(roomId), async snap=>{
+      if(!snap.exists()){
+        // Room was deleted (call ended by either side) — make sure our UI is cleaned up
+        if(commCallRoomId===roomId) window.commEndCall(true);
+        return;
+      }
       const d = snap.val();
       if(!d) return;
 
       if(isCaller){
         if(d.status==='accepted' && d.answer && !commRemoteDescSet){
           commRemoteDescSet = true;
-          await commPC.setRemoteDescription(new RTCSessionDescription(d.answer));
-          await commDrainPeerCands();
+          try{
+            await commPC.setRemoteDescription(new RTCSessionDescription(d.answer));
+            await commDrainPeerCands();
+          }catch(e){}
           setCoStatus('সংযুক্ত হচ্ছে...', false);
         }
         if(d.status==='rejected'){
           toast('❌ Call reject করা হয়েছে');
-          window.commEndCall();
-        }
-        if(d.status==='ended'){
-          window.commEndCall();
+          window.commEndCall(true);
         }
       }
-
-      // Listen to opposite side's ICE candidates
-      const peerCandPath = isCaller ? 'calleeCandidates' : 'callerCandidates';
-      if(commUnsubPeerCands) off(ref(rtdb, `community_calls/${roomId}/${peerCandPath}`));
-      onValue(ref(rtdb, `community_calls/${roomId}/${peerCandPath}`), candSnap=>{
-        if(!candSnap.exists()) return;
-        candSnap.forEach(child=>{
-          const cand = child.val();
-          if(commRemoteDescSet && commPC){
-            commPC.addIceCandidate(new RTCIceCandidate(cand)).catch(()=>{});
-          } else {
-            commPendingPeerCands.push(cand);
-          }
-        });
-      });
-      commUnsubPeerCands = true;
+      if(d.status==='ended'){
+        toast('📞 Call শেষ হয়েছে');
+        window.commEndCall(true);
+      }
     });
-    commUnsubCallDoc = true;
+
+    // Listen to opposite side's ICE candidates
+    const peerCandPath = isCaller ? 'calleeCandidates' : 'callerCandidates';
+    commUnsubPeerCands = onValue(ref(rtdb, `community_calls/${roomId}/${peerCandPath}`), candSnap=>{
+      if(!candSnap.exists()) return;
+      candSnap.forEach(child=>{
+        const cand = child.val();
+        if(commRemoteDescSet && commPC){
+          commPC.addIceCandidate(new RTCIceCandidate(cand)).catch(()=>{});
+        } else {
+          commPendingPeerCands.push(cand);
+        }
+      });
+    });
   }
 
-  // Incoming community call listener (always active once registered)
+  // Incoming community call listener (always active once registered) — listens ONLY to top-level child_added/value
+  // to avoid re-triggering on every nested candidate write.
+  let commIncomingUnsub = null;
+  let commActiveIncomingRoomId = null;
   function commListenIncomingCalls(){
     if(!commUid) return;
-    onValue(ref(rtdb, 'community_calls'), snap=>{
+    if(commIncomingUnsub){ try{ commIncomingUnsub(); }catch(e){} commIncomingUnsub=null; }
+    commIncomingUnsub = onValue(ref(rtdb, 'community_calls'), snap=>{
       if(!snap.exists()) return;
+      let found=false;
       snap.forEach(child=>{
         const roomId = child.key;
         const d = child.val();
-        if(d && d.calleeUid===commUid && d.status==='ringing' && !document.getElementById('commIncomingModal')){
-          commShowIncomingCall(roomId, d);
+        if(d && d.calleeUid===commUid && d.status==='ringing'){
+          found=true;
+          // Don't show twice for the same incoming call, and don't show if we're already in a call
+          if(commActiveIncomingRoomId!==roomId && !commCallRoomId && !document.getElementById('commIncomingModal')){
+            commActiveIncomingRoomId = roomId;
+            commShowIncomingCall(roomId, d);
+          }
         }
       });
+      if(!found){
+        commActiveIncomingRoomId = null;
+        document.getElementById('commIncomingModal')?.remove();
+      }
     });
   }
 
   function commShowIncomingCall(roomId, d){
+    document.getElementById('commIncomingModal')?.remove();
     const modal = document.createElement('div');
     modal.id = 'commIncomingModal';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;color:#fff;font-family:Poppins,sans-serif';
@@ -1925,21 +2067,24 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
 
   window.commAcceptCall = async function(roomId){
     document.getElementById('commIncomingModal')?.remove();
+    commActiveIncomingRoomId = null;
     commCallRoomId = roomId;
     commIsCaller = false;
 
     const snap = await get(commCallRef(roomId));
     const d = snap.val();
-    if(!d){ toast('❌ Call পাওয়া যায়নি'); return; }
+    if(!d){ toast('❌ Call পাওয়া যায়নি'); commCallRoomId=null; return; }
     commCallType = d.type;
-    commCurrentPeer = {uid: d.callerUid, name: d.callerName, username:''};
+    commCurrentPeer = {uid: d.callerUid, name: d.callerName, username: d.callerUname||''};
 
     try{
       commLocalStream = await navigator.mediaDevices.getUserMedia({
         audio:true, video: d.type==='video' ? {facingMode:'user'} : false
       });
-    }catch(e){ toast('❌ Camera/Mic permission দিতে হবে!'); return; }
+    }catch(e){ toast('❌ Camera/Mic permission দিতে হবে!'); commCallRoomId=null; return; }
 
+    document.getElementById('coAvatar').style.display='none';
+    document.getElementById('commCallAvatarBig')?.remove();
     document.getElementById('coAudioBg').insertAdjacentHTML('afterbegin', `<div class="comm-call-avatar-big" id="commCallAvatarBig">${commInitials(d.callerName)}</div>`);
     document.querySelector('.co-name').textContent = d.callerName;
     setCoStatus('সংযুক্ত হচ্ছে...', false);
@@ -1947,6 +2092,7 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
 
     const localVideo = document.getElementById('localVideo');
     if(d.type==='video'){ localVideo.srcObject = commLocalStream; showVideoUI(); }
+    else document.getElementById('coAudioBg').classList.remove('hidden');
 
     commPC = commNewPC();
     commLocalStream.getTracks().forEach(t=> commPC.addTrack(t, commLocalStream));
@@ -1967,11 +2113,12 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
 
   window.commRejectCall = async function(roomId){
     document.getElementById('commIncomingModal')?.remove();
+    commActiveIncomingRoomId = null;
     try{ await update(commCallRef(roomId), {status:'rejected'}); }catch(e){}
     setTimeout(()=>{ remove(commCallRef(roomId)).catch(()=>{}); }, 1000);
   };
 
-  window.commEndCall = async function(){
+  window.commEndCall = async function(remoteTriggered){
     callOverlayHide();
     stopTimerUI();
     document.getElementById('commCallAvatarBig')?.remove();
@@ -1987,11 +2134,17 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     if(commPC){ try{commPC.close();}catch(e){} commPC=null; }
     if(commLocalStream){ commLocalStream.getTracks().forEach(t=>t.stop()); commLocalStream=null; }
 
-    if(commCallRoomId){
-      try{ await update(commCallRef(commCallRoomId), {status:'ended'}); }catch(e){}
-      setTimeout(()=>{ remove(commCallRef(commCallRoomId)).catch(()=>{}); }, 1500);
+    // Detach listeners properly using the real unsubscribe functions
+    if(typeof commUnsubCallDoc === 'function'){ try{ commUnsubCallDoc(); }catch(e){} commUnsubCallDoc=null; }
+    if(typeof commUnsubPeerCands === 'function'){ try{ commUnsubPeerCands(); }catch(e){} commUnsubPeerCands=null; }
+
+    const roomToClean = commCallRoomId;
+    commCallRoomId=null; commRemoteDescSet=false; commPendingPeerCands=[]; commIsCaller=false;
+
+    if(roomToClean && !remoteTriggered){
+      try{ await update(commCallRef(roomToClean), {status:'ended'}); }catch(e){}
+      setTimeout(()=>{ remove(commCallRef(roomToClean)).catch(()=>{}); }, 1200);
     }
-    commCallRoomId=null; commRemoteDescSet=false; commPendingPeerCands=[];
   };
 
 
