@@ -625,7 +625,7 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   /* Cloudinary config — Firebase Storage replace */
   const CLD_CLOUD='dufki8nrd';
   const CLD_PRESET='fahim_upload';
-  import {getDatabase,ref,onValue,set,onDisconnect,remove,update,push,get,off}
+  import {getDatabase,ref,onValue,set,onDisconnect,remove,update,push,get,off,onChildAdded}
     from "https://www.gstatic.com/firebasejs/10.12.1/firebase-database.js";
 
   const FB={
@@ -1745,59 +1745,71 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     // Properly detach the PREVIOUS chat's listener using its real unsubscribe function
     if(commUnsubChat){ try{ commUnsubChat(); }catch(e){} commUnsubChat=null; }
 
-    commUnsubChat = onValue(ref(rtdb, msgPath), snap=>{
-      console.log('[Community] Message snapshot for room', roomId, '- exists:', snap.exists());
-      try{
-        if(!snap.exists()){
-          area.innerHTML = '<div class="comm-empty">এখনো কোনো মেসেজ নেই। কিছু লিখুন! 👋</div>';
-          return;
-        }
-        const msgs = [];
-        snap.forEach(child=> msgs.push({id:child.key, ...child.val()}));
-        console.log('[Community] Messages in room:', msgs.length);
-        msgs.sort((a,b)=>(a.ts||0)-(b.ts||0));
+    let renderedAny = false;
+    const renderedIds = new Set();
 
-        const frag = document.createDocumentFragment();
-        msgs.forEach(m=>{
-          const row = document.createElement('div');
-          row.className = 'cc-msg ' + (m.from===commUid?'me':'them');
-          const t = new Date(m.ts||Date.now());
-          const timeStr = t.toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'});
+    function renderOneMessage(id, m){
+      if(renderedIds.has(id)) return; // never render the same message twice
+      renderedIds.add(id);
 
-          if(m.type==='image'){
-            const bubble=document.createElement('div');
-            bubble.className='cc-bubble'; bubble.style.padding='5px';
-            const img=document.createElement('img');
-            img.src=m.mediaUrl; img.style.cssText='max-width:220px;border-radius:12px;display:block;cursor:pointer';
-            img.onclick=()=>{ if(window.openLightbox) window.openLightbox(m.mediaUrl); };
-            bubble.appendChild(img);
-            row.appendChild(bubble);
-          } else if(m.type==='video'){
-            const bubble=document.createElement('div');
-            bubble.className='cc-bubble'; bubble.style.padding='5px';
-            const vid=document.createElement('video');
-            vid.src=m.mediaUrl; vid.controls=true; vid.style.cssText='max-width:220px;border-radius:12px;display:block;max-height:260px';
-            bubble.appendChild(vid);
-            row.appendChild(bubble);
-          } else {
-            const bubble=document.createElement('div');
-            bubble.className='cc-bubble'; bubble.textContent=m.text||'';
-            row.appendChild(bubble);
-          }
-          const timeEl=document.createElement('div'); timeEl.className='cc-time'; timeEl.textContent=timeStr;
-          row.appendChild(timeEl);
-          frag.appendChild(row);
-        });
+      // Clear the "loading"/"empty" placeholder the first time we render something
+      if(!renderedAny){
         area.innerHTML='';
-        area.appendChild(frag);
-        area.scrollTop = area.scrollHeight;
-      }catch(err){
-        console.error('[Community] Chat render error:', err);
+        renderedAny = true;
       }
+
+      const row = document.createElement('div');
+      row.className = 'cc-msg ' + (m.from===commUid?'me':'them');
+      row.dataset.mid = id;
+      const t = new Date(m.ts||Date.now());
+      const timeStr = t.toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'});
+
+      if(m.type==='image'){
+        const bubble=document.createElement('div');
+        bubble.className='cc-bubble'; bubble.style.padding='5px';
+        const img=document.createElement('img');
+        img.src=m.mediaUrl; img.style.cssText='max-width:220px;border-radius:12px;display:block;cursor:pointer';
+        img.onclick=()=>{ if(window.openLightbox) window.openLightbox(m.mediaUrl); };
+        bubble.appendChild(img);
+        row.appendChild(bubble);
+      } else if(m.type==='video'){
+        const bubble=document.createElement('div');
+        bubble.className='cc-bubble'; bubble.style.padding='5px';
+        const vid=document.createElement('video');
+        vid.src=m.mediaUrl; vid.controls=true; vid.style.cssText='max-width:220px;border-radius:12px;display:block;max-height:260px';
+        bubble.appendChild(vid);
+        row.appendChild(bubble);
+      } else {
+        const bubble=document.createElement('div');
+        bubble.className='cc-bubble'; bubble.textContent=m.text||'';
+        row.appendChild(bubble);
+      }
+      const timeEl=document.createElement('div'); timeEl.className='cc-time'; timeEl.textContent=timeStr;
+      row.appendChild(timeEl);
+      area.appendChild(row);
+      area.scrollTop = area.scrollHeight;
+      console.log('[Community] Rendered message id=', id, 'total rendered so far:', renderedIds.size);
+    }
+
+    // onChildAdded fires ONCE for every existing message (in order) on first attach,
+    // then again for every NEW message pushed afterwards — this avoids any
+    // "snapshot only shows 1 item" issue because we never re-derive the full list.
+    commUnsubChat = onChildAdded(ref(rtdb, msgPath), (childSnap)=>{
+      const id = childSnap.key;
+      const m = childSnap.val();
+      console.log('[Community] onChildAdded fired. id=', id, 'data=', JSON.stringify(m));
+      renderOneMessage(id, m);
     }, (err)=>{
-      console.error('[Community] commOpenChat onValue ERROR for room', roomId, ':', err);
+      console.error('[Community] commOpenChat onChildAdded ERROR for room', roomId, ':', err);
       area.innerHTML = '<div class="comm-empty">❌ মেসেজ লোড করতে সমস্যা হয়েছে। (Console দেখুন)</div>';
     });
+
+    // If after a short delay nothing was rendered, show the friendly empty state
+    setTimeout(()=>{
+      if(!renderedAny){
+        area.innerHTML = '<div class="comm-empty">এখনো কোনো মেসেজ নেই। কিছু লিখুন! 👋</div>';
+      }
+    }, 800);
   };
 
   window.commCloseChat = function(){
@@ -1831,7 +1843,11 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
       const msgRef = await push(ref(rtdb, `community_chats/${roomId}/messages`), {
         from: commUid, text, ts: now
       });
-      console.log('[Community] Message saved with key:', msgRef.key);
+      console.log('[Community] Message saved with key:', msgRef.key, 'at full path:', msgRef.toString());
+
+      // VERIFICATION: immediately re-fetch the whole messages node to see what's actually stored
+      const verifySnap = await get(ref(rtdb, `community_chats/${roomId}/messages`));
+      console.log('[Community] VERIFY — immediately after push, messages node has', verifySnap.numChildren(), 'children. Raw:', JSON.stringify(verifySnap.val()));
     }catch(e){
       toast('❌ Message পাঠানো যায়নি: '+(e.message||'Unknown error'));
       console.error('[Community] commSendMsg: message push FAILED', e);
