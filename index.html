@@ -1843,11 +1843,7 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
       const msgRef = await push(ref(rtdb, `community_chats/${roomId}/messages`), {
         from: commUid, text, ts: now
       });
-      console.log('[Community] Message saved with key:', msgRef.key, 'at full path:', msgRef.toString());
-
-      // VERIFICATION: immediately re-fetch the whole messages node to see what's actually stored
-      const verifySnap = await get(ref(rtdb, `community_chats/${roomId}/messages`));
-      console.log('[Community] VERIFY — immediately after push, messages node has', verifySnap.numChildren(), 'children. Raw:', JSON.stringify(verifySnap.val()));
+      console.log('[Community] Message saved with key:', msgRef.key);
     }catch(e){
       toast('❌ Message পাঠানো যায়নি: '+(e.message||'Unknown error'));
       console.error('[Community] commSendMsg: message push FAILED', e);
