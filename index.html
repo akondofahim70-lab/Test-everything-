@@ -479,7 +479,7 @@
           <div class="comm-me-uname" id="commMyUname">@—</div>
         </div>
       </div>
-      <button class="comm-logout" onclick="commLogout()">🚪</button>
+      <button class="comm-logout" onclick="commShowLogoutConfirm()">🚪</button>
     </div>
 
     <div class="comm-search-wrap">
@@ -1566,6 +1566,12 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     commListenIncomingCalls();
   }
 
+  // Normalize phone numbers for matching (strip spaces, dashes, leading +880/0 variations aren't unified —
+  // we keep it simple and match on digits-only string so "01303-359567" and "01303 359567" are treated the same)
+  function commNormalizePhone(p){
+    return String(p||'').replace(/[^\d]/g,'');
+  }
+
   window.commRegister = async function(){
     const name = document.getElementById('commName').value.trim();
     const phone = document.getElementById('commPhone').value.trim();
@@ -1578,7 +1584,61 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     btn.disabled = true; btn.textContent = '⏳ যোগ দেওয়া হচ্ছে...';
     note.textContent = '';
 
+    const normPhone = commNormalizePhone(phone);
+
     try{
+      // Check if this phone number is already registered (fast index lookup first)
+      let existingUid = null;
+      const phoneIndexSnap = await get(ref(rtdb, `community_phones/${normPhone}`));
+      if(phoneIndexSnap.exists()){
+        existingUid = phoneIndexSnap.val();
+      } else {
+        // Fallback: scan all users for a matching phone (covers accounts created
+        // before the community_phones index existed)
+        const allUsersSnap = await get(ref(rtdb, 'community_users'));
+        if(allUsersSnap.exists()){
+          allUsersSnap.forEach(child=>{
+            if(existingUid) return;
+            const u = child.val();
+            if(commNormalizePhone(u.phone) === normPhone) existingUid = child.key;
+          });
+        }
+      }
+
+      if(existingUid){
+        const existingUserSnap = await get(ref(rtdb, `community_users/${existingUid}`));
+
+        if(existingUserSnap.exists()){
+          const existingUser = existingUserSnap.val();
+
+          // Backfill the phone index if this account predates it
+          if(!phoneIndexSnap.exists()){
+            set(ref(rtdb, `community_phones/${normPhone}`), existingUid).catch(()=>{});
+          }
+
+          // Case: same number + same name → restore the old account
+          if((existingUser.name||'').trim().toLowerCase() === name.toLowerCase()){
+            localStorage.setItem('comm_uid', existingUid);
+            localStorage.setItem('comm_username', existingUser.username);
+            commUid = existingUid;
+            commProfile = {name: existingUser.name, phone: existingUser.phone, username: existingUser.username};
+
+            await set(ref(rtdb, `community_users/${existingUid}/online`), true);
+            await set(ref(rtdb, `community_users/${existingUid}/lastSeen`), Date.now());
+
+            toast(`👋 আবার স্বাগতম, ${existingUser.name}! তোমার আগের একাউন্ট ফিরে এসেছে।`);
+            commShowMain();
+            return;
+          }
+
+          // Case: same number + different name → block, ask for a different number
+          note.textContent = '⚠️ এই নাম্বার already registered আছে। অন্য নাম্বার দিয়ে try করুন, অথবা আগের নাম দিয়ে login করুন।';
+          btn.disabled = false; btn.textContent = '✨ যোগ দিন';
+          return;
+        }
+      }
+
+      // No existing account for this phone — create a brand new one
       const username = await commGenerateUsername(name);
       const uid = 'cu_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
 
@@ -1589,6 +1649,7 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
         online: true
       });
       await set(ref(rtdb, `community_usernames/${username}`), uid);
+      await set(ref(rtdb, `community_phones/${normPhone}`), uid);
 
       localStorage.setItem('comm_uid', uid);
       localStorage.setItem('comm_username', username);
@@ -1609,7 +1670,26 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     }
   };
 
+  function commShowLogoutConfirm(){
+    document.getElementById('commLogoutConfirm')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'commLogoutConfirm';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99997;display:flex;align-items:center;justify-content:center;padding:24px';
+    modal.innerHTML = `
+      <div style="background:#1a1a24;border:1px solid #2e2e40;border-radius:18px;padding:26px 22px;max-width:320px;width:100%;text-align:center;font-family:Poppins,sans-serif;color:#e8e8f0">
+        <div style="font-size:38px;margin-bottom:10px">🚪</div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:8px">তুমি কি সত্যিই Logout করতে চাও?</div>
+        <div style="font-size:12px;color:#7a7a99;margin-bottom:20px;line-height:1.6">Logout করলে আবার login করতে তোমার আগের নাম ও নাম্বার লাগবে।</div>
+        <div style="display:flex;gap:10px">
+          <button onclick="document.getElementById('commLogoutConfirm').remove()" style="flex:1;background:#22222f;border:1px solid #2e2e40;color:#e8e8f0;border-radius:11px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">না</button>
+          <button onclick="commLogout()" style="flex:1;background:#ef4444;border:none;color:#fff;border-radius:11px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">হ্যাঁ, Logout</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
   window.commLogout = function(){
+    document.getElementById('commLogoutConfirm')?.remove();
     if(commUid) set(ref(rtdb, `community_users/${commUid}/online`), false).catch(()=>{});
     if(commUnsubChatList){ try{ commUnsubChatList(); }catch(e){} commUnsubChatList=null; }
     if(commUnsubChat){ try{ commUnsubChat(); }catch(e){} commUnsubChat=null; }
@@ -2409,7 +2489,7 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
             <div style="font-size:9px;color:#7a7a99">Online এখন</div>
           </div>
         </div>
-        <input type="text" id="commAdminSearch" placeholder="🔍 User name/username খুঁজুন..." style="width:100%;background:#22222f;border:1px solid #2e2e40;border-radius:8px;padding:8px;color:#e8e8f0;font-family:inherit;font-size:12px;outline:none;margin-bottom:8px" oninput="commAdminFilterUsers()">
+        <input type="text" id="commAdminSearch" placeholder="🔍 নাম, username, নাম্বার বা uid দিয়ে খুঁজুন..." style="width:100%;background:#22222f;border:1px solid #2e2e40;border-radius:8px;padding:8px;color:#e8e8f0;font-family:inherit;font-size:12px;outline:none;margin-bottom:8px" oninput="commAdminFilterUsers()">
       </div>
       <div class="qa-list" id="commUserList">
         <div class="sct">সব Community Users</div>
@@ -2621,6 +2701,7 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
           <div style="flex:1;min-width:0">
             <div style="font-size:12px;font-weight:600;color:#fff">${commAdminEsc(u.name)} <span style="font-size:10px;color:#6c63ff">@${commAdminEsc(u.username)}</span></div>
             <div style="font-size:10px;color:#7a7a99">📱 ${commAdminEsc(u.phone||'—')}</div>
+            <div style="font-size:9px;color:#5a5a72;margin-top:2px;font-family:monospace">${commAdminEsc(u.uid||'')}</div>
           </div>
           <div style="font-size:9px;color:${u.online?'#4ade80':'#7a7a99'}">${u.online?'● Online':'Offline'}</div>
         `;
@@ -2632,7 +2713,10 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
       const q = (document.getElementById('commAdminSearch')?.value||'').toLowerCase();
       if(!q){ commAdminRenderUsers(_commAllUsers); return; }
       const filtered = _commAllUsers.filter(u =>
-        (u.name||'').toLowerCase().includes(q) || (u.username||'').toLowerCase().includes(q)
+        (u.name||'').toLowerCase().includes(q) ||
+        (u.username||'').toLowerCase().includes(q) ||
+        (u.phone||'').replace(/[^\d]/g,'').includes(q.replace(/[^\d]/g,'')) ||
+        (u.uid||'').toLowerCase().includes(q)
       );
       commAdminRenderUsers(filtered);
     };
