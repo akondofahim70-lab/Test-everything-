@@ -1516,16 +1516,25 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   }
 
   // Init: check if already registered
+  let _commInitialized = false;
+
   window.initCommunity = async function(){
     if(commUid){
       try{
         const snap = await get(ref(rtdb, `community_users/${commUid}`));
         if(snap.exists()){
           commProfile = snap.val();
+          // If we're already initialized and currently inside a 1-1 chat, don't reset the view —
+          // just make sure the page itself is visible (showPage already handled that).
+          if(_commInitialized && document.getElementById('commChatWin').style.display === 'flex'){
+            console.log('[Community] Already initialized and chat is open — skipping re-init');
+            return;
+          }
           commShowMain();
+          _commInitialized = true;
           return;
         }
-      }catch(e){}
+      }catch(e){ console.error('[Community] initCommunity check failed:', e); }
     }
     commShowAuth();
   };
@@ -1536,6 +1545,8 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     document.getElementById('commChatWin').style.display='none';
   }
 
+  let _commPresenceSetup = false;
+
   function commShowMain(){
     document.getElementById('commAuth').style.display='none';
     document.getElementById('commMain').style.display='flex';
@@ -1543,11 +1554,14 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     document.getElementById('commMyAvatar').textContent = commInitials(commProfile.name);
     document.getElementById('commMyName').textContent = commProfile.name;
     document.getElementById('commMyUname').textContent = '@'+commProfile.username;
-    // Mark online + set up presence
+    // Mark online + set up presence (only once per session)
     set(ref(rtdb, `community_users/${commUid}/online`), true);
     set(ref(rtdb, `community_users/${commUid}/lastSeen`), Date.now());
-    const presRef2 = ref(rtdb, `community_users/${commUid}/online`);
-    onDisconnect(presRef2).set(false);
+    if(!_commPresenceSetup){
+      const presRef2 = ref(rtdb, `community_users/${commUid}/online`);
+      onDisconnect(presRef2).set(false);
+      _commPresenceSetup = true;
+    }
     commLoadChatList();
     commListenIncomingCalls();
   }
@@ -1661,36 +1675,59 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
 
   /* ── CHAT LIST (recent conversations) ── */
   function commLoadChatList(){
-    if(!commUid) return;
+    if(!commUid){ console.warn('[Community] commLoadChatList: no commUid'); return; }
     const listEl = document.getElementById('commChatList');
+    if(!listEl){ console.warn('[Community] commLoadChatList: #commChatList not found in DOM'); return; }
+
     if(commUnsubChatList){ try{ commUnsubChatList(); }catch(e){} commUnsubChatList=null; }
-    commUnsubChatList = onValue(ref(rtdb, `community_meta/${commUid}/contacts`), snap=>{
+
+    const path = `community_meta/${commUid}/contacts`;
+    console.log('[Community] Listening to chat list at:', path);
+
+    commUnsubChatList = onValue(ref(rtdb, path), snap=>{
+      console.log('[Community] Chat list snapshot received. Exists:', snap.exists());
       if(!snap.exists()){
         listEl.innerHTML = '<div class="comm-empty">এখনো কারো সাথে chat করেননি। 🔍 Search করে কাউকে খুঁজুন!</div>';
         return;
       }
       const contacts = [];
-      snap.forEach(child=> contacts.push({uid:child.key, ...child.val()}));
+      snap.forEach(child=>{
+        const val = child.val() || {};
+        contacts.push({ uid: child.key, otherName: val.otherName||'?', otherUname: val.otherUname||'', lastMsg: val.lastMsg||'', lastTs: val.lastTs||0 });
+      });
+      console.log('[Community] Contacts found:', contacts.length, contacts);
       contacts.sort((a,b)=>(b.lastTs||0)-(a.lastTs||0));
       listEl.innerHTML = '';
+      const frag = document.createDocumentFragment();
       contacts.forEach(c=>{
         const card = document.createElement('div');
         card.className = 'comm-user-card';
-        card.innerHTML = `
-          <div class="comm-user-avatar">${commInitials(c.otherName)}</div>
-          <div class="comm-user-info">
-            <div class="comm-user-name">${commEsc(c.otherName)}</div>
-            <div class="comm-user-last">${commEsc(c.lastMsg||'')}</div>
-          </div>
-        `;
-        card.onclick = ()=> commOpenChat(c.uid, c.otherName, c.otherUname);
-        listEl.appendChild(card);
+        const avatar = document.createElement('div');
+        avatar.className = 'comm-user-avatar';
+        avatar.textContent = commInitials(c.otherName);
+        const info = document.createElement('div');
+        info.className = 'comm-user-info';
+        const nameEl = document.createElement('div');
+        nameEl.className = 'comm-user-name';
+        nameEl.textContent = c.otherName;
+        const lastEl = document.createElement('div');
+        lastEl.className = 'comm-user-last';
+        lastEl.textContent = c.lastMsg;
+        info.appendChild(nameEl); info.appendChild(lastEl);
+        card.appendChild(avatar); card.appendChild(info);
+        card.addEventListener('click', ()=> commOpenChat(c.uid, c.otherName, c.otherUname));
+        frag.appendChild(card);
       });
+      listEl.appendChild(frag);
+    }, (err)=>{
+      console.error('[Community] commLoadChatList onValue ERROR:', err);
+      listEl.innerHTML = '<div class="comm-empty">❌ Chat list লোড করতে সমস্যা হয়েছে। (Console দেখুন)</div>';
     });
   }
 
   /* ── OPEN 1-1 CHAT ── */
   window.commOpenChat = function(peerUid, peerName, peerUname){
+    if(!peerUid){ console.error('[Community] commOpenChat called without peerUid!'); return; }
     commCurrentPeer = {uid:peerUid, name:peerName, username:peerUname};
     document.getElementById('commMain').style.display = 'none';
     document.getElementById('commChatWin').style.display = 'flex';
@@ -1703,11 +1740,13 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
 
     const roomId = commRoomId(commUid, peerUid);
     const msgPath = `community_chats/${roomId}/messages`;
+    console.log('[Community] Opening chat. RoomId:', roomId, 'Path:', msgPath, 'My uid:', commUid, 'Peer uid:', peerUid);
 
     // Properly detach the PREVIOUS chat's listener using its real unsubscribe function
     if(commUnsubChat){ try{ commUnsubChat(); }catch(e){} commUnsubChat=null; }
 
     commUnsubChat = onValue(ref(rtdb, msgPath), snap=>{
+      console.log('[Community] Message snapshot for room', roomId, '- exists:', snap.exists());
       try{
         if(!snap.exists()){
           area.innerHTML = '<div class="comm-empty">এখনো কোনো মেসেজ নেই। কিছু লিখুন! 👋</div>';
@@ -1715,6 +1754,7 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
         }
         const msgs = [];
         snap.forEach(child=> msgs.push({id:child.key, ...child.val()}));
+        console.log('[Community] Messages in room:', msgs.length);
         msgs.sort((a,b)=>(a.ts||0)-(b.ts||0));
 
         const frag = document.createDocumentFragment();
@@ -1729,7 +1769,7 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
             bubble.className='cc-bubble'; bubble.style.padding='5px';
             const img=document.createElement('img');
             img.src=m.mediaUrl; img.style.cssText='max-width:220px;border-radius:12px;display:block;cursor:pointer';
-            img.onclick=()=>{ if(window.openLightbox) window.openLightbox(m.mediaUrl); else openLightbox(m.mediaUrl); };
+            img.onclick=()=>{ if(window.openLightbox) window.openLightbox(m.mediaUrl); };
             bubble.appendChild(img);
             row.appendChild(bubble);
           } else if(m.type==='video'){
@@ -1752,8 +1792,11 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
         area.appendChild(frag);
         area.scrollTop = area.scrollHeight;
       }catch(err){
-        console.error('Chat render error:', err);
+        console.error('[Community] Chat render error:', err);
       }
+    }, (err)=>{
+      console.error('[Community] commOpenChat onValue ERROR for room', roomId, ':', err);
+      area.innerHTML = '<div class="comm-empty">❌ মেসেজ লোড করতে সমস্যা হয়েছে। (Console দেখুন)</div>';
     });
   };
 
@@ -1772,7 +1815,7 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   };
 
   window.commSendMsg = async function(){
-    if(!commCurrentPeer || !commUid) return;
+    if(!commCurrentPeer || !commUid){ console.warn('[Community] commSendMsg: missing peer or uid', {commCurrentPeer, commUid}); return; }
     const inp = document.getElementById('ccInput');
     const text = inp.value.trim();
     if(!text) return;
@@ -1780,43 +1823,59 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
 
     const roomId = commRoomId(commUid, commCurrentPeer.uid);
     const now = Date.now();
+    console.log('[Community] Sending message. RoomId:', roomId, 'From:', commUid, 'To:', commCurrentPeer.uid, 'Text:', text);
 
     // 1) Save the actual message FIRST and independently — this must succeed
     //    even if the metadata writes below fail for any reason.
     try{
-      await push(ref(rtdb, `community_chats/${roomId}/messages`), {
+      const msgRef = await push(ref(rtdb, `community_chats/${roomId}/messages`), {
         from: commUid, text, ts: now
       });
+      console.log('[Community] Message saved with key:', msgRef.key);
     }catch(e){
       toast('❌ Message পাঠানো যায়নি: '+(e.message||'Unknown error'));
-      console.error('commSendMsg: message push failed', e);
+      console.error('[Community] commSendMsg: message push FAILED', e);
       return;
     }
 
     // 2) Update contact metadata for both users — run independently so a failure
     //    on one path (e.g. receiver's node) doesn't block the other or hide an error.
-    const metaResults = await Promise.allSettled([
-      set(ref(rtdb, `community_meta/${commUid}/contacts/${commCurrentPeer.uid}`), {
-        otherName: commCurrentPeer.name||'', otherUname: commCurrentPeer.username||'',
-        lastMsg: text, lastTs: now
-      }),
-      set(ref(rtdb, `community_meta/${commCurrentPeer.uid}/contacts/${commUid}`), {
-        otherName: (commProfile&&commProfile.name)||'', otherUname: (commProfile&&commProfile.username)||'',
-        lastMsg: text, lastTs: now
-      })
-    ]);
-    metaResults.forEach((r,i)=>{
-      if(r.status==='rejected'){
-        console.error(`commSendMsg: metadata write ${i===0?'(sender)':'(receiver)'} failed`, r.reason);
+    async function commWriteMetaWithRetry(path, data, label, retries){
+      for(let attempt=0; attempt<=retries; attempt++){
+        try{
+          await set(ref(rtdb, path), data);
+          console.log(`[Community] Metadata write (${label}) OK on attempt ${attempt+1}`);
+          return true;
+        }catch(e){
+          console.error(`[Community] Metadata write (${label}) FAILED on attempt ${attempt+1}:`, e);
+          if(attempt===retries){
+            toast(`⚠️ ${label} metadata সেভ হয়নি! Console দেখুন।`);
+            return false;
+          }
+          await new Promise(r=>setTimeout(r, 400));
+        }
       }
-    });
+    }
+
+    await Promise.all([
+      commWriteMetaWithRetry(
+        `community_meta/${commUid}/contacts/${commCurrentPeer.uid}`,
+        { otherName: commCurrentPeer.name||'', otherUname: commCurrentPeer.username||'', lastMsg: text, lastTs: now },
+        'sender-side contact', 2
+      ),
+      commWriteMetaWithRetry(
+        `community_meta/${commCurrentPeer.uid}/contacts/${commUid}`,
+        { otherName: (commProfile&&commProfile.name)||'', otherUname: (commProfile&&commProfile.username)||'', lastMsg: text, lastTs: now },
+        'receiver-side contact', 2
+      )
+    ]);
 
     // 3) Admin monitoring log — best-effort, never blocks the chat itself
     push(ref(rtdb, `community_admin_log`), {
       from: (commProfile&&commProfile.name)||'', fromUname: (commProfile&&commProfile.username)||'',
       to: commCurrentPeer.name||'', toUname: commCurrentPeer.username||'',
       text, ts: now
-    }).catch(e=>console.error('commSendMsg: admin log failed', e));
+    }).catch(e=>console.error('[Community] commSendMsg: admin log failed', e));
   };
 
   /* ── Community chat: Photo/Video upload (reuses Cloudinary, same as personal chat) ── */
