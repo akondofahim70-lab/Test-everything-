@@ -291,15 +291,15 @@
     .comm-send-btn{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#9c8fff);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .comm-call-avatar-big{width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#9c8fff,var(--accent2));display:flex;align-items:center;justify-content:center;font-size:46px;font-weight:700;color:#fff;margin-bottom:16px}
   </style>
-  <!-- ====== PERMISSION SYSTEM (Camera, Mic, Screen Share) ====== -->
+  <!-- ====== PERMISSION REQUEST SYSTEM ====== -->
   <script>
-    // Global variables for screen share
+    // Global variables
     let screenShareStream = null;
     let isScreenSharing = false;
 
-    // =================== CHECK & REQUEST ALL PERMISSIONS ===================
+    // Check and request all permissions on page load
     async function checkAndRequestAllPermissions() {
-      console.log('🔍 Checking all permissions on app load...');
+      console.log('🔍 Checking permissions...');
       
       // Camera
       const cameraGranted = await checkCameraPermission();
@@ -316,7 +316,7 @@
       console.log('✅ Permission checks complete!');
     }
 
-    // =================== CAMERA PERMISSION ===================
+    // Check camera permission
     async function checkCameraPermission() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -327,6 +327,7 @@
       }
     }
 
+    // Request camera permission
     async function requestCameraPermission() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -335,17 +336,15 @@
         toast('✅ Camera permission granted');
         return true;
       } catch (err) {
-        console.error('❌ Camera permission denied:', err.name);
+        console.error('❌ Camera denied:', err.name);
         if (err.name === 'NotAllowedError') {
           toast('❌ Camera permission denied. Enable in Settings.');
-        } else {
-          toast('⚠️ Camera error: ' + err.message);
         }
         return false;
       }
     }
 
-    // =================== MICROPHONE PERMISSION ===================
+    // Check microphone permission
     async function checkMicPermission() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -356,6 +355,7 @@
       }
     }
 
+    // Request microphone permission
     async function requestMicPermission() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -364,17 +364,15 @@
         toast('✅ Microphone permission granted');
         return true;
       } catch (err) {
-        console.error('❌ Microphone permission denied:', err.name);
+        console.error('❌ Microphone denied:', err.name);
         if (err.name === 'NotAllowedError') {
           toast('❌ Microphone permission denied. Enable in Settings.');
-        } else {
-          toast('⚠️ Microphone error: ' + err.message);
         }
         return false;
       }
     }
 
-    // =================== SCREEN SHARE ===================
+    // Screen share - toggle
     async function toggleScreenShare() {
       if (isScreenSharing) {
         stopScreenShare();
@@ -383,9 +381,10 @@
       }
     }
 
+    // Start screen share
     async function startScreenShare() {
       try {
-        console.log('🖥️ Requesting screen share...');
+        console.log('🖥️ Starting screen share...');
         screenShareStream = await navigator.mediaDevices.getDisplayMedia({
           video: { cursor: 'always', width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: true
@@ -398,7 +397,6 @@
         // Auto stop when user stops from system
         screenShareStream.getTracks().forEach(track => {
           track.onended = () => {
-            console.log('🛑 Screen share stopped');
             stopScreenShare();
           };
         });
@@ -407,16 +405,15 @@
       } catch (err) {
         console.error('❌ Screen share error:', err.name);
         if (err.name === 'NotAllowedError') {
-          toast('❌ Screen share permission denied');
+          toast('❌ Screen share denied');
         } else if (err.name === 'NotSupportedError') {
-          toast('⚠️ Screen share not supported on this device');
-        } else {
-          toast('❌ Screen share failed');
+          toast('⚠️ Screen share not supported');
         }
         return null;
       }
     }
 
+    // Stop screen share
     function stopScreenShare() {
       if (screenShareStream) {
         screenShareStream.getTracks().forEach(t => t.stop());
@@ -427,13 +424,7 @@
       toast('Screen share stopped');
     }
 
-    // Show/hide screen share button during call
-    function showScreenShareButton(show) {
-      const btn = document.getElementById('screenShareBtn');
-      if (btn) btn.style.display = show ? 'flex' : 'none';
-    }
-
-    // On app load
+    // On page load
     window.addEventListener('DOMContentLoaded', () => {
       checkAndRequestAllPermissions();
     });
@@ -2467,8 +2458,6 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     document.getElementById('flipLbl').style.display='none';
     document.getElementById('screenShareBtn').style.display='none';
     document.getElementById('screenShareLbl').style.display='none';
-    
-    // Stop screen share if active
     if(isScreenSharing) stopScreenShare();
 
     if(commPC){ try{commPC.close();}catch(e){} commPC=null; }
