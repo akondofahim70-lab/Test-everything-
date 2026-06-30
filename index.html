@@ -1019,6 +1019,13 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     _pendingAdminCands=[];
     _remoteDescSet=false;
     let _sentCandCount2=0;
+    let _uiConnected=false;
+    function _markConnectedUI(){
+      if(_uiConnected)return;
+      _uiConnected=true;
+      setCoStatus('সংযুক্ত হয়েছে ✅',true);
+      startTimerUI();
+    }
     p.onicecandidate=e=>{
       if(e.candidate){
         _sentCandCount2++;
@@ -1035,15 +1042,24 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
         remoteVid.srcObject=e.streams[0];
         if(callType==='video')showVideoUI();
       }
+      // Some mobile browsers fire ontrack with live media well before (or instead of)
+      // a reliable 'connected' connectionState event, so treat it as a connection signal too.
+      _markConnectedUI();
     };
     p.onconnectionstatechange=()=>{
       console.log('[USER WEBRTC DEBUG] connectionState changed to:', p.connectionState);
-      if(p.connectionState==='connected'){setCoStatus('সংযুক্ত হয়েছে ✅',true);startTimerUI();}
+      if(p.connectionState==='connected'){_markConnectedUI();}
       if(p.connectionState==='failed'){setCoStatus('❌ সংযোগ ব্যর্থ হয়েছে',false);}
       if(p.connectionState==='disconnected'){setCoStatus('সংযোগ বিচ্ছিন্ন...',false);}
     };
     p.oniceconnectionstatechange=()=>{
       console.log('[USER WEBRTC DEBUG] iceConnectionState changed to:', p.iceConnectionState);
+      // connectionState is unreliable on some mobile/Android browsers (it can stay
+      // stuck on 'connecting' forever even though ICE + media are actually fine).
+      // iceConnectionState is far more consistently supported, so use it as the
+      // real source of truth for flipping the UI out of "Calling...".
+      if(p.iceConnectionState==='connected'||p.iceConnectionState==='completed'){_markConnectedUI();}
+      if(p.iceConnectionState==='failed'){setCoStatus('❌ সংযোগ ব্যর্থ হয়েছে',false);}
     };
     p.onicegatheringstatechange=()=>{};
     return p;
@@ -1688,6 +1704,12 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
       _pendingUserCands=[]; _adminRemoteDescSet=false; _addedUserCandKeys=new Set();
       const p=new RTCPeerConnection(ICE_SERVERS2);
       let _sentCandCount=0;
+      let _adminUiConnected=false;
+      function _markAdminConnectedUI(){
+        if(_adminUiConnected)return;
+        _adminUiConnected=true;
+        window.toast('✅ Call সংযুক্ত হয়েছে!');
+      }
       p.onicecandidate=e=>{
         if(e.candidate){
           _sentCandCount++;
@@ -1704,16 +1726,21 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
           v.srcObject=e.streams[0];
           v.play().then(()=>console.log('[ADMIN WEBRTC DEBUG] ✅ Remote video/audio play() succeeded')).catch(err=>console.error('[ADMIN WEBRTC DEBUG] ❌ play() blocked:', err.message));
         }
+        _markAdminConnectedUI();
       };
       p.onconnectionstatechange=()=>{
         const s=p.connectionState;
         console.log('[ADMIN WEBRTC DEBUG] connectionState changed to:', s);
-        if(s==='connected'){window.toast('✅ Call সংযুক্ত হয়েছে!');}
+        if(s==='connected'){_markAdminConnectedUI();}
         else if(s==='failed'){window.toast('❌ Call সংযোগ ব্যর্থ! Reject করে আবার try করুন।');}
         else if(s==='disconnected'){window.toast('⚠️ Call সংযোগ বিচ্ছিন্ন...');}
       };
       p.oniceconnectionstatechange=()=>{
         console.log('[ADMIN WEBRTC DEBUG] iceConnectionState changed to:', p.iceConnectionState);
+        // Same fix as the user side: connectionState can get stuck on mobile browsers,
+        // so iceConnectionState is the reliable fallback signal.
+        if(p.iceConnectionState==='connected'||p.iceConnectionState==='completed'){_markAdminConnectedUI();}
+        if(p.iceConnectionState==='failed'){window.toast('❌ Call সংযোগ ব্যর্থ! Reject করে আবার try করুন।');}
       };
       p.onicegatheringstatechange=()=>{
         console.log('[ADMIN WEBRTC DEBUG] iceGatheringState changed to:', p.iceGatheringState);
