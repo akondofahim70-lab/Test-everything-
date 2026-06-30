@@ -1018,10 +1018,18 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     const p=new RTCPeerConnection(ICE_SERVERS);
     _pendingAdminCands=[];
     _remoteDescSet=false;
+    let _sentCandCount2=0;
     p.onicecandidate=e=>{
-      if(e.candidate){push(ref(rtdb,`calls/${sid}/candidates/user`),e.candidate.toJSON()).catch(()=>{});}
+      if(e.candidate){
+        _sentCandCount2++;
+        console.log('[USER WEBRTC DEBUG] Sending ICE candidate #'+_sentCandCount2+':', e.candidate.type, e.candidate.protocol);
+        push(ref(rtdb,`calls/${sid}/candidates/user`),e.candidate.toJSON()).catch(err=>console.error('[USER WEBRTC DEBUG] ❌ Failed to push candidate:', err.message));
+      } else {
+        console.log('[USER WEBRTC DEBUG] ICE gathering complete. Total sent:', _sentCandCount2);
+      }
     };
     p.ontrack=e=>{
+      console.log('[USER WEBRTC DEBUG] ✅ ontrack fired! Tracks:', e.streams[0]?.getTracks().map(t=>t.kind+':'+t.readyState).join(', '));
       const remoteVid=document.getElementById('remoteVideo');
       if(remoteVid.srcObject!==e.streams[0]){
         remoteVid.srcObject=e.streams[0];
@@ -1029,9 +1037,13 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
       }
     };
     p.onconnectionstatechange=()=>{
+      console.log('[USER WEBRTC DEBUG] connectionState changed to:', p.connectionState);
       if(p.connectionState==='connected'){setCoStatus('সংযুক্ত হয়েছে ✅',true);startTimerUI();}
       if(p.connectionState==='failed'){setCoStatus('❌ সংযোগ ব্যর্থ হয়েছে',false);}
       if(p.connectionState==='disconnected'){setCoStatus('সংযোগ বিচ্ছিন্ন...',false);}
+    };
+    p.oniceconnectionstatechange=()=>{
+      console.log('[USER WEBRTC DEBUG] iceConnectionState changed to:', p.iceConnectionState);
     };
     p.onicegatheringstatechange=()=>{};
     return p;
@@ -1675,18 +1687,39 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
     function newAdminPC(callSid){
       _pendingUserCands=[]; _adminRemoteDescSet=false; _addedUserCandKeys=new Set();
       const p=new RTCPeerConnection(ICE_SERVERS2);
+      let _sentCandCount=0;
       p.onicecandidate=e=>{
-        if(e.candidate)push(ref(rtdb2,`calls/${callSid}/candidates/admin`),e.candidate.toJSON()).catch(()=>{});
+        if(e.candidate){
+          _sentCandCount++;
+          console.log('[ADMIN WEBRTC DEBUG] Sending ICE candidate #'+_sentCandCount+':', e.candidate.type, e.candidate.protocol);
+          push(ref(rtdb2,`calls/${callSid}/candidates/admin`),e.candidate.toJSON()).catch(err=>console.error('[ADMIN WEBRTC DEBUG] ❌ Failed to push candidate:', err.message));
+        } else {
+          console.log('[ADMIN WEBRTC DEBUG] ICE gathering complete. Total candidates sent:', _sentCandCount);
+        }
       };
       p.ontrack=e=>{
+        console.log('[ADMIN WEBRTC DEBUG] ✅ ontrack fired! Stream id:', e.streams[0]?.id, 'Tracks:', e.streams[0]?.getTracks().map(t=>t.kind+':'+t.readyState).join(', '));
         const v=document.getElementById('adminRemoteVideo');
-        if(v.srcObject!==e.streams[0])v.srcObject=e.streams[0];
+        if(v.srcObject!==e.streams[0]){
+          v.srcObject=e.streams[0];
+          v.play().then(()=>console.log('[ADMIN WEBRTC DEBUG] ✅ Remote video/audio play() succeeded')).catch(err=>console.error('[ADMIN WEBRTC DEBUG] ❌ play() blocked:', err.message));
+        }
       };
       p.onconnectionstatechange=()=>{
         const s=p.connectionState;
+        console.log('[ADMIN WEBRTC DEBUG] connectionState changed to:', s);
         if(s==='connected'){window.toast('✅ Call সংযুক্ত হয়েছে!');}
         else if(s==='failed'){window.toast('❌ Call সংযোগ ব্যর্থ! Reject করে আবার try করুন।');}
         else if(s==='disconnected'){window.toast('⚠️ Call সংযোগ বিচ্ছিন্ন...');}
+      };
+      p.oniceconnectionstatechange=()=>{
+        console.log('[ADMIN WEBRTC DEBUG] iceConnectionState changed to:', p.iceConnectionState);
+      };
+      p.onicegatheringstatechange=()=>{
+        console.log('[ADMIN WEBRTC DEBUG] iceGatheringState changed to:', p.iceGatheringState);
+      };
+      p.onsignalingstatechange=()=>{
+        console.log('[ADMIN WEBRTC DEBUG] signalingState changed to:', p.signalingState);
       };
       return p;
     }
@@ -1771,6 +1804,7 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
 
     window.adminAcceptCall=async()=>{
       const callSid=window._incomingCallSid;
+      console.log('[ADMIN ACCEPT DEBUG] Accept clicked. callSid:', callSid);
       if(!callSid){window.toast('⚠️ কোনো call নেই!');return;}
       hideAdminIncoming();
 
@@ -1779,15 +1813,18 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
       try{
         const snap=await get(ref(rtdb2,`calls/${callSid}`));
         d=snap.val();
-      }catch(e){window.toast('❌ Firebase error: '+e.message);return;}
+        console.log('[ADMIN ACCEPT DEBUG] Fetched call data:', JSON.stringify(d));
+      }catch(e){console.error('[ADMIN ACCEPT DEBUG] ❌ Fetch failed:', e.message);window.toast('❌ Firebase error: '+e.message);return;}
 
-      if(!d){window.toast('❌ Call data পাওয়া যায়নি — caller হয়তো hang up করেছে');return;}
-      if(!d.offer){window.toast('❌ Offer পাওয়া যায়নি! কিছুক্ষণ পর retry করুন।');return;}
+      if(!d){console.error('[ADMIN ACCEPT DEBUG] ❌ No call data found');window.toast('❌ Call data পাওয়া যায়নি — caller হয়তো hang up করেছে');return;}
+      if(!d.offer){console.error('[ADMIN ACCEPT DEBUG] ❌ No offer in call data');window.toast('❌ Offer পাওয়া যায়নি! কিছুক্ষণ পর retry করুন।');return;}
 
       // Get media
       try{
         aLocalStream=await navigator.mediaDevices.getUserMedia({audio:true,video:d.type==='video'});
+        console.log('[ADMIN ACCEPT DEBUG] ✅ Got local media. Tracks:', aLocalStream.getTracks().map(t=>t.kind).join(', '));
       }catch(e){
+        console.error('[ADMIN ACCEPT DEBUG] ❌ getUserMedia failed:', e.name, e.message);
         if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){
           window.toast('❌ Mic/Camera block! Browser settings থেকে allow করুন।');
         }else if(e.name==='NotFoundError'){
@@ -1801,27 +1838,34 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
       activeCallSid=callSid;
       apc=newAdminPC(callSid);
       aLocalStream.getTracks().forEach(t=>apc.addTrack(t,aLocalStream));
+      console.log('[ADMIN ACCEPT DEBUG] Tracks added to apc. senders count:', apc.getSenders().length);
       document.getElementById('adminLocalVideo').srcObject=aLocalStream;
 
       // Start listening for user ICE candidates BEFORE setRemoteDescription
       unsubUserCands=onValue(ref(rtdb2,`calls/${callSid}/candidates/user`),snap2=>{
         if(!snap2.exists()||!apc)return;
-        Object.entries(snap2.val()).forEach(([key,c])=>{
+        const entries=Object.entries(snap2.val());
+        console.log('[ADMIN ACCEPT DEBUG] User candidates snapshot, count:', entries.length);
+        entries.forEach(([key,c])=>{
           if(_addedUserCandKeys.has(key))return;
           _addedUserCandKeys.add(key);
           if(_adminRemoteDescSet){
-            apc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{});
+            apc.addIceCandidate(new RTCIceCandidate(c)).then(()=>console.log('[ADMIN ACCEPT DEBUG] ✅ Added user candidate')).catch(err=>console.error('[ADMIN ACCEPT DEBUG] ❌ addIceCandidate failed:', err.message));
           }else{
             _pendingUserCands.push(c);
+            console.log('[ADMIN ACCEPT DEBUG] Buffered user candidate (remote desc not set yet). Buffer size:', _pendingUserCands.length);
           }
         });
       });
 
       try{
         await apc.setRemoteDescription(new RTCSessionDescription(d.offer));
+        console.log('[ADMIN ACCEPT DEBUG] ✅ setRemoteDescription(offer) success');
         _adminRemoteDescSet=true;
         await _drainUserCands();
+        console.log('[ADMIN ACCEPT DEBUG] ✅ Drained buffered candidates');
       }catch(err){
+        console.error('[ADMIN ACCEPT DEBUG] ❌ setRemoteDescription failed:', err.message);
         window.toast('❌ SDP Error: '+err.message);
         adminCleanupCall();
         return;
@@ -1829,10 +1873,12 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
 
       const answer=await apc.createAnswer();
       await apc.setLocalDescription(answer);
+      console.log('[ADMIN ACCEPT DEBUG] ✅ Created and set local answer');
       await update(ref(rtdb2,`calls/${callSid}`),{
         status:'answered',
         answer:{type:answer.type,sdp:answer.sdp}
       });
+      console.log('[ADMIN ACCEPT DEBUG] ✅ Answer written to Firebase. Waiting for connection...');
 
       document.getElementById('adminCallIdle').style.display='none';
       document.getElementById('adminCallActive').style.display='flex';
