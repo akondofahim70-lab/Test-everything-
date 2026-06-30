@@ -217,218 +217,7 @@
     .act-btns button{flex:1;border:none;border-radius:9px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;color:#fff;font-family:inherit}
     .act-accept{background:#4ade80}
     .act-reject{background:#ef4444}
-
-    /* ══════════════════ COMMUNITY PAGE CSS ══════════════════ */
-    #communityPage{background:var(--bg);position:relative;overflow:hidden}
-
-    /* Auth screen */
-    .comm-auth{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
-    .comm-auth-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px 28px;max-width:360px;width:100%;text-align:center;display:flex;flex-direction:column;gap:12px}
-    .comm-auth-icon{font-size:48px;margin-bottom:4px}
-    .comm-auth-title{font-size:18px;font-weight:700;color:var(--white)}
-    .comm-auth-sub{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:8px}
-    .comm-inp{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:border-color .2s}
-    .comm-inp:focus{border-color:var(--accent)}
-    .comm-inp::placeholder{color:var(--muted)}
-    .comm-btn{background:linear-gradient(135deg,var(--accent),#9c8fff);border:none;color:#fff;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;transition:transform .15s}
-    .comm-btn:hover{transform:scale(1.02)}
-    .comm-btn:disabled{opacity:.5;cursor:not-allowed}
-    .comm-auth-note{font-size:11px;color:var(--accent);min-height:14px}
-
-    /* Main community UI */
-    .comm-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-    .comm-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--surface);border-bottom:1px solid var(--border)}
-    .comm-me{display:flex;align-items:center;gap:10px}
-    .comm-me-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9c8fff);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0}
-    .comm-me-name{font-size:13px;font-weight:700;color:var(--text)}
-    .comm-me-uname{font-size:11px;color:var(--accent)}
-    .comm-logout{background:var(--surface2);border:1px solid var(--border);border-radius:10px;width:36px;height:36px;cursor:pointer;font-size:15px;color:var(--muted);transition:all .2s}
-    .comm-logout:hover{border-color:#ef4444;color:#ef4444}
-
-    .comm-search-wrap{position:relative;padding:12px 18px 6px}
-    .comm-search-icon{position:absolute;left:30px;top:50%;transform:translateY(-40%);color:var(--muted);font-size:13px;pointer-events:none}
-    .comm-search-inp{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px 10px 36px;color:var(--text);font-family:inherit;font-size:13px;outline:none;transition:border-color .2s}
-    .comm-search-inp:focus{border-color:var(--accent)}
-    .comm-search-inp::placeholder{color:var(--muted)}
-
-    .comm-tabs{display:flex;gap:8px;padding:8px 18px}
-    .comm-tab{flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s}
-    .comm-tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-
-    .comm-list{flex:1;overflow-y:auto;padding:6px 14px 14px;display:flex;flex-direction:column;gap:8px}
-    .comm-empty{text-align:center;color:var(--muted);font-size:12px;padding:40px 20px;line-height:1.7}
-    .comm-user-card{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:11px 13px;cursor:pointer;transition:border-color .2s}
-    .comm-user-card:hover{border-color:var(--accent)}
-    .comm-user-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#9c8fff,var(--accent2));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;position:relative}
-    .comm-user-online-dot{position:absolute;bottom:-1px;right:-1px;width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid var(--surface)}
-    .comm-user-info{flex:1;min-width:0}
-    .comm-user-name{font-size:13px;font-weight:600;color:var(--text)}
-    .comm-user-uname{font-size:11px;color:var(--accent)}
-    .comm-user-last{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .comm-user-action{font-size:11px;color:var(--muted)}
-
-    /* 1-to-1 chat window */
-    .comm-chat-win{flex:1;display:flex;flex-direction:column;background:var(--bg)}
-    .comm-chat-top{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border-bottom:1px solid var(--border)}
-    .comm-back{background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:2px 6px}
-    .comm-chat-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#9c8fff,var(--accent2));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
-    .comm-chat-info{flex:1;min-width:0}
-    .comm-chat-name{font-size:13px;font-weight:700;color:var(--text)}
-    .comm-chat-uname{font-size:10px;color:var(--accent)}
-    .comm-call-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;width:36px;height:36px;cursor:pointer;font-size:15px;flex-shrink:0;transition:all .2s}
-    .comm-call-btn:hover{border-color:var(--accent);background:rgba(108,99,255,.1)}
-    .comm-chat-area{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:9px}
-    .cc-msg{max-width:72%;display:flex;flex-direction:column;animation:fu .2s ease}
-    .cc-msg.me{align-self:flex-end;align-items:flex-end}
-    .cc-msg.them{align-self:flex-start;align-items:flex-start}
-    .cc-bubble{padding:9px 14px;border-radius:16px;font-size:13px;line-height:1.5;word-break:break-word}
-    .cc-msg.me .cc-bubble{background:var(--accent);color:#fff;border-bottom-right-radius:4px}
-    .cc-msg.them .cc-bubble{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px}
-    .cc-time{font-size:9px;color:var(--muted);margin-top:3px;padding:0 3px}
-    .comm-input-bar{display:flex;align-items:flex-end;gap:8px;padding:12px 14px;background:var(--surface);border-top:1px solid var(--border)}
-    .comm-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px;outline:none;resize:none;max-height:100px;min-height:42px;transition:border-color .2s}
-    .comm-input:focus{border-color:var(--accent)}
-    .comm-send-btn{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#9c8fff);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-    .comm-call-avatar-big{width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#9c8fff,var(--accent2));display:flex;align-items:center;justify-content:center;font-size:46px;font-weight:700;color:#fff;margin-bottom:16px}
   </style>
-  <!-- ====== PERMISSION REQUEST SYSTEM ====== -->
-  <script>
-    // Global variables
-    let screenShareStream = null;
-    let isScreenSharing = false;
-
-    // Check and request all permissions on page load
-    async function checkAndRequestAllPermissions() {
-      console.log('🔍 Checking permissions...');
-      
-      // Camera
-      const cameraGranted = await checkCameraPermission();
-      if (!cameraGranted) {
-        await requestCameraPermission();
-      }
-      
-      // Microphone
-      const micGranted = await checkMicPermission();
-      if (!micGranted) {
-        await requestMicPermission();
-      }
-      
-      console.log('✅ Permission checks complete!');
-    }
-
-    // Check camera permission
-    async function checkCameraPermission() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        stream.getTracks().forEach(t => t.stop());
-        return true;
-      } catch {
-        return false;
-      }
-    }
-
-    // Request camera permission
-    async function requestCameraPermission() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        stream.getTracks().forEach(t => t.stop());
-        console.log('✅ Camera permission granted');
-        toast('✅ Camera permission granted');
-        return true;
-      } catch (err) {
-        console.error('❌ Camera denied:', err.name);
-        if (err.name === 'NotAllowedError') {
-          toast('❌ Camera permission denied. Enable in Settings.');
-        }
-        return false;
-      }
-    }
-
-    // Check microphone permission
-    async function checkMicPermission() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        stream.getTracks().forEach(t => t.stop());
-        return true;
-      } catch {
-        return false;
-      }
-    }
-
-    // Request microphone permission
-    async function requestMicPermission() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        stream.getTracks().forEach(t => t.stop());
-        console.log('✅ Microphone permission granted');
-        toast('✅ Microphone permission granted');
-        return true;
-      } catch (err) {
-        console.error('❌ Microphone denied:', err.name);
-        if (err.name === 'NotAllowedError') {
-          toast('❌ Microphone permission denied. Enable in Settings.');
-        }
-        return false;
-      }
-    }
-
-    // Screen share - toggle
-    async function toggleScreenShare() {
-      if (isScreenSharing) {
-        stopScreenShare();
-      } else {
-        await startScreenShare();
-      }
-    }
-
-    // Start screen share
-    async function startScreenShare() {
-      try {
-        console.log('🖥️ Starting screen share...');
-        screenShareStream = await navigator.mediaDevices.getDisplayMedia({
-          video: { cursor: 'always', width: { ideal: 1920 }, height: { ideal: 1080 } },
-          audio: true
-        });
-        
-        isScreenSharing = true;
-        console.log('✅ Screen sharing started');
-        toast('✅ Screen sharing started');
-        
-        // Auto stop when user stops from system
-        screenShareStream.getTracks().forEach(track => {
-          track.onended = () => {
-            stopScreenShare();
-          };
-        });
-        
-        return screenShareStream;
-      } catch (err) {
-        console.error('❌ Screen share error:', err.name);
-        if (err.name === 'NotAllowedError') {
-          toast('❌ Screen share denied');
-        } else if (err.name === 'NotSupportedError') {
-          toast('⚠️ Screen share not supported');
-        }
-        return null;
-      }
-    }
-
-    // Stop screen share
-    function stopScreenShare() {
-      if (screenShareStream) {
-        screenShareStream.getTracks().forEach(t => t.stop());
-        screenShareStream = null;
-      }
-      isScreenSharing = false;
-      console.log('🛑 Screen share stopped');
-      toast('Screen share stopped');
-    }
-
-    // On page load
-    window.addEventListener('DOMContentLoaded', () => {
-      checkAndRequestAllPermissions();
-    });
-  </script>
 </head>
 <body>
 
@@ -455,7 +244,6 @@
       <div class="di" onclick="showPage('about')">👤 About Me</div>
       <div class="di" onclick="showPage('inv1')">🚀 New Invention</div>
       <div class="di" onclick="showPage('inv2')">❓ Question & Answer</div>
-      <div class="di" onclick="showPage('community')">👥 Community</div>
       <div class="di" id="installMenuItem" onclick="triggerInstall()">📲 App Install করো</div>
     </div>
   </div>
@@ -591,85 +379,6 @@
   <div class="inv-view" id="inv2View"><iframe class="inv-frame" id="inv2Frame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe></div>
 </div>
 
-<!-- ══════════════════ COMMUNITY PAGE ══════════════════ -->
-<div class="page" id="communityPage">
-
-  <!-- STEP A: Registration screen (shown if not registered) -->
-  <div class="comm-auth" id="commAuth">
-    <div class="comm-auth-card">
-      <div class="comm-auth-icon">👥</div>
-      <div class="comm-auth-title">Community-তে যোগ দিন</div>
-      <div class="comm-auth-sub">নাম ও নাম্বার দিয়ে একটা unique username পাবেন, তারপর অন্য সবার সাথে chat ও call করতে পারবেন।</div>
-      <input class="comm-inp" id="commName" type="text" placeholder="আপনার নাম" maxlength="40">
-      <input class="comm-inp" id="commPhone" type="tel" placeholder="মোবাইল নাম্বার" maxlength="15">
-      <button class="comm-btn" id="commJoinBtn" onclick="commRegister()">✨ যোগ দিন</button>
-      <div class="comm-auth-note" id="commAuthNote"></div>
-    </div>
-  </div>
-
-  <!-- STEP B: Main community UI (shown after registered) -->
-  <div class="comm-main" id="commMain" style="display:none">
-    <div class="comm-topbar">
-      <div class="comm-me">
-        <div class="comm-me-avatar" id="commMyAvatar">?</div>
-        <div>
-          <div class="comm-me-name" id="commMyName">—</div>
-          <div class="comm-me-uname" id="commMyUname">@—</div>
-        </div>
-      </div>
-      <button class="comm-logout" onclick="commShowLogoutConfirm()">🚪</button>
-    </div>
-
-    <div class="comm-search-wrap">
-      <span class="comm-search-icon">🔍</span>
-      <input class="comm-search-inp" id="commSearchInp" type="text" placeholder="Username দিয়ে খুঁজুন... (যেমন rahim2)" oninput="commSearchUsers()">
-    </div>
-
-    <div class="comm-tabs">
-      <button class="comm-tab on" id="commTabChats" onclick="commSetTab('chats',this)">💬 Chats</button>
-      <button class="comm-tab" id="commTabSearch" onclick="commSetTab('search',this)">🔍 Search</button>
-    </div>
-
-    <!-- Chat list (recent conversations) -->
-    <div class="comm-list" id="commChatList">
-      <div class="comm-empty">এখনো কারো সাথে chat করেননি। 🔍 Search করে কাউকে খুঁজুন!</div>
-    </div>
-
-    <!-- Search results -->
-    <div class="comm-list" id="commSearchList" style="display:none">
-      <div class="comm-empty">Username লিখে search করুন</div>
-    </div>
-  </div>
-
-  <!-- STEP C: 1-to-1 chat window -->
-  <div class="comm-chat-win" id="commChatWin" style="display:none">
-    <div class="comm-chat-top">
-      <button class="comm-back" onclick="commCloseChat()">←</button>
-      <div class="comm-chat-avatar" id="ccAvatar">?</div>
-      <div class="comm-chat-info">
-        <div class="comm-chat-name" id="ccName">—</div>
-        <div class="comm-chat-uname" id="ccUname">@—</div>
-      </div>
-      <button class="comm-call-btn" onclick="commStartCall('audio')">📞</button>
-      <button class="comm-call-btn" onclick="commStartCall('video')">📹</button>
-    </div>
-    <div class="comm-chat-area" id="ccArea">
-      <div class="comm-empty" id="ccEmpty">এখনো কোনো মেসেজ নেই। কিছু লিখুন! 👋</div>
-    </div>
-    <div class="comm-input-bar">
-      <label class="attach-btn" title="Photo/Video পাঠান">
-        📎
-        <input type="file" id="ccFileInput" accept="image/*,video/*" onchange="commHandleFileSelect(event)">
-      </label>
-      <textarea class="comm-input" id="ccInput" rows="1" placeholder="মেসেজ লিখুন..." onkeydown="commHandleKey(event)" oninput="commAutoResize(this)"></textarea>
-      <button class="comm-send-btn" onclick="commSendMsg()">
-        <svg viewBox="0 0 24 24" width="19" height="19"><path fill="#fff" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-      </button>
-    </div>
-  </div>
-</div>
-
-
 <!-- Upload progress -->
 <div class="upload-progress" id="uploadProgress">
   <span>📤 Upload হচ্ছে...</span>
@@ -723,11 +432,7 @@
         <div class="cc-btn-lbl" id="flipLbl" style="display:none">Flip</div>
       </div>
       <div class="cc-with-lbl">
-        <button class="cc-btn" id="screenShareBtn" onclick="toggleScreenShare()" style="display:none">🖥️</button>
-        <div class="cc-btn-lbl" id="screenShareLbl" style="display:none">Share</div>
-      </div>
-      <div class="cc-with-lbl">
-        <button class="cc-btn end" onclick="(window.commCallRoomId ? window.commEndCall() : window.endCall())">📞</button>
+        <button class="cc-btn end" onclick="endCall()">📞</button>
         <div class="cc-btn-lbl">End</div>
       </div>
       <div class="cc-with-lbl">
@@ -767,7 +472,7 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   /* Cloudinary config — Firebase Storage replace */
   const CLD_CLOUD='dufki8nrd';
   const CLD_PRESET='fahim_upload';
-  import {getDatabase,ref,onValue,set,onDisconnect,remove,update,push,get,off,onChildAdded}
+  import {getDatabase,ref,onValue,set,onDisconnect,remove,update,push,get,off}
     from "https://www.gstatic.com/firebasejs/10.12.1/firebase-database.js";
 
   const FB={
@@ -1134,10 +839,9 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   window.toast=msg=>{const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3000);};
   window.showPage=page=>{
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    const map={chat:'chatPage',about:'aboutPage',inv1:'inv1Page',inv2:'inv2Page',community:'communityPage'};
+    const map={chat:'chatPage',about:'aboutPage',inv1:'inv1Page',inv2:'inv2Page'};
     document.getElementById(map[page]||'chatPage').classList.add('active');
     closeDM();
-    if(page==='community'&&window.initCommunity)window.initCommunity();
   };
 
   /* ══════════════════ WEBRTC CALL SYSTEM (USER SIDE) ══════════════════ */
@@ -1197,29 +901,25 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     document.getElementById('camLbl').style.display='block';
     document.getElementById('flipBtn').style.display='flex';
     document.getElementById('flipLbl').style.display='block';
-    document.getElementById('screenShareBtn').style.display='flex';
-    document.getElementById('screenShareLbl').style.display='block';
   }
 
   // Camera flip (front/back)
   let _usingFront=true;
   window.flipCamera=async()=>{
-    const activeStream = window.commLocalStream || localStream;
-    const activePC = window.commPC || pc;
-    if(!activeStream)return;
+    if(!localStream)return;
     _usingFront=!_usingFront;
-    activeStream.getVideoTracks().forEach(t=>t.stop());
+    localStream.getVideoTracks().forEach(t=>t.stop());
     try{
       const ns=await navigator.mediaDevices.getUserMedia({
         audio:false,
         video:{facingMode:_usingFront?'user':'environment'}
       });
       const newTrack=ns.getVideoTracks()[0];
-      const sender=activePC?.getSenders().find(s=>s.track?.kind==='video');
+      const sender=pc?.getSenders().find(s=>s.track?.kind==='video');
       if(sender)sender.replaceTrack(newTrack);
-      activeStream.removeTrack(activeStream.getVideoTracks()[0]);
-      activeStream.addTrack(newTrack);
-      document.getElementById('localVideo').srcObject=activeStream;
+      localStream.removeTrack(localStream.getVideoTracks()[0]);
+      localStream.addTrack(newTrack);
+      document.getElementById('localVideo').srcObject=localStream;
     }catch(e){toast('❌ Camera flip হয়নি');}
   };
 
@@ -1234,15 +934,13 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   let _screenStream=null;
   window.toggleScreenShare=async()=>{
     document.getElementById('callMenu').classList.remove('open');
-    const activeStream = window.commLocalStream || localStream;
-    const activePC = window.commPC || pc;
     if(_screenStream){
       _screenStream.getTracks().forEach(t=>t.stop());
       _screenStream=null;
       // Restore camera
-      if(activeStream&&activePC){
-        const camTrack=activeStream.getVideoTracks()[0];
-        const sender=activePC.getSenders().find(s=>s.track?.kind==='video');
+      if(localStream&&pc){
+        const camTrack=localStream.getVideoTracks()[0];
+        const sender=pc.getSenders().find(s=>s.track?.kind==='video');
         if(sender&&camTrack)sender.replaceTrack(camTrack);
       }
       toast('📷 Camera তে ফিরে এসেছে');
@@ -1251,7 +949,7 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     try{
       _screenStream=await navigator.mediaDevices.getDisplayMedia({video:true});
       const screenTrack=_screenStream.getVideoTracks()[0];
-      const sender=activePC?.getSenders().find(s=>s.track?.kind==='video');
+      const sender=pc?.getSenders().find(s=>s.track?.kind==='video');
       if(sender)sender.replaceTrack(screenTrack);
       screenTrack.onended=()=>{_screenStream=null;};
       toast('🖥️ Screen share চালু');
@@ -1389,12 +1087,20 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     await pc.setLocalDescription(offer);
 
     const callerName=localStorage.getItem('fahim_username')||'ভিজিটর';
-    await set(callRef,{
-      type,status:'ringing',
-      name:callerName,
-      offer:{type:offer.type,sdp:offer.sdp},
-      startedAt:Date.now()
-    });
+    console.log('[CALL DEBUG] Writing call to Firebase. sid:', sid, 'type:', type, 'name:', callerName);
+    try{
+      await set(callRef,{
+        type,status:'ringing',
+        name:callerName,
+        offer:{type:offer.type,sdp:offer.sdp},
+        startedAt:Date.now()
+      });
+      console.log('[CALL DEBUG] ✅ Call write SUCCESS at path: calls/'+sid);
+    }catch(callWriteErr){
+      console.error('[CALL DEBUG] ❌ Call write FAILED:', callWriteErr.message, callWriteErr);
+      toast('❌ Call শুরু করা যায়নি: '+callWriteErr.message);
+      return;
+    }
 
     // Telegram call notification
     const callEmoji=type==='video'?'📹':'🎙️';
@@ -1454,18 +1160,16 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
   };
 
   window.toggleMute=()=>{
-    const stream = window.commLocalStream || localStream;
-    if(!stream)return;
-    const track=stream.getAudioTracks()[0];
+    if(!localStream)return;
+    const track=localStream.getAudioTracks()[0];
     if(!track)return;
     track.enabled=!track.enabled;
     document.getElementById('muteBtn').classList.toggle('active',!track.enabled);
     document.getElementById('muteBtn').textContent=track.enabled?'🎤':'🔇';
   };
   window.toggleCam=()=>{
-    const stream = window.commLocalStream || localStream;
-    if(!stream)return;
-    const track=stream.getVideoTracks()[0];
+    if(!localStream)return;
+    const track=localStream.getVideoTracks()[0];
     if(!track)return;
     track.enabled=!track.enabled;
     const btn=document.getElementById('camBtn');
@@ -1625,858 +1329,6 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
     try{await update(callRef,{status:'rejected'});}catch(e){}
     setTimeout(()=>{remove(callRef).catch(()=>{});},500);
   };
-
-  /* ══════════════════════════════════════════════════════
-     COMMUNITY FEATURE — User Registration + Search + Chat
-     Data structure in Realtime Database:
-       community_users/{uid}        → {name, phone, username, createdAt, lastSeen}
-       community_usernames/{uname}  → uid  (for uniqueness lookup)
-       community_chats/{roomId}/messages/{msgId} → {from, text, ts}
-       community_meta/{uid}/contacts/{otherUid} → {lastMsg, lastTs, otherName, otherUname}
-     roomId = sorted [uidA, uidB].join('_')
-  ══════════════════════════════════════════════════════ */
-
-  let commUid = localStorage.getItem('comm_uid') || null;
-  let commProfile = null; // {name, phone, username}
-  let commCurrentPeer = null; // {uid, name, username}
-  let commUnsubChat = null;
-  let commUnsubSearch = null;
-  let commUnsubChatList = null;
-
-  function commRoomId(a,b){ return [a,b].sort().join('_'); }
-  function commInitials(name){ return (name||'?').trim().charAt(0).toUpperCase(); }
-  function commEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-  // Generate unique username from name: e.g. "Rahim" -> rahim2, farid5
-  async function commGenerateUsername(name){
-    const base = (name||'user').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,12) || 'user';
-    for(let tries=0; tries<50; tries++){
-      const num = Math.floor(Math.random()*9000)+1; // 1-9000
-      const candidate = base + num;
-      const snap = await get(ref(rtdb, `community_usernames/${candidate}`));
-      if(!snap.exists()) return candidate;
-    }
-    return base + Date.now().toString().slice(-5);
-  }
-
-  // Init: check if already registered
-  let _commInitialized = false;
-
-  window.initCommunity = async function(){
-    if(commUid){
-      try{
-        const snap = await get(ref(rtdb, `community_users/${commUid}`));
-        if(snap.exists()){
-          commProfile = snap.val();
-          // If we're already initialized and currently inside a 1-1 chat, don't reset the view —
-          // just make sure the page itself is visible (showPage already handled that).
-          if(_commInitialized && document.getElementById('commChatWin').style.display === 'flex'){
-            console.log('[Community] Already initialized and chat is open — skipping re-init');
-            return;
-          }
-          commShowMain();
-          _commInitialized = true;
-          return;
-        }
-      }catch(e){ console.error('[Community] initCommunity check failed:', e); }
-    }
-    commShowAuth();
-  };
-
-  function commShowAuth(){
-    document.getElementById('commAuth').style.display='flex';
-    document.getElementById('commMain').style.display='none';
-    document.getElementById('commChatWin').style.display='none';
-  }
-
-  let _commPresenceSetup = false;
-
-  function commShowMain(){
-    document.getElementById('commAuth').style.display='none';
-    document.getElementById('commMain').style.display='flex';
-    document.getElementById('commChatWin').style.display='none';
-    document.getElementById('commMyAvatar').textContent = commInitials(commProfile.name);
-    document.getElementById('commMyName').textContent = commProfile.name;
-    document.getElementById('commMyUname').textContent = '@'+commProfile.username;
-    // Mark online + set up presence (only once per session)
-    set(ref(rtdb, `community_users/${commUid}/online`), true);
-    set(ref(rtdb, `community_users/${commUid}/lastSeen`), Date.now());
-    if(!_commPresenceSetup){
-      const presRef2 = ref(rtdb, `community_users/${commUid}/online`);
-      onDisconnect(presRef2).set(false);
-      _commPresenceSetup = true;
-    }
-    commLoadChatList();
-    commListenIncomingCalls();
-  }
-
-  // Normalize phone numbers for matching (strip spaces, dashes, leading +880/0 variations aren't unified —
-  // we keep it simple and match on digits-only string so "01303-359567" and "01303 359567" are treated the same)
-  function commNormalizePhone(p){
-    return String(p||'').replace(/[^\d]/g,'');
-  }
-
-  window.commRegister = async function(){
-    const name = document.getElementById('commName').value.trim();
-    const phone = document.getElementById('commPhone').value.trim();
-    const btn = document.getElementById('commJoinBtn');
-    const note = document.getElementById('commAuthNote');
-
-    if(!name){ note.textContent='⚠️ নাম লিখুন!'; document.getElementById('commName').focus(); return; }
-    if(!phone || phone.length<6){ note.textContent='⚠️ সঠিক নাম্বার দিন!'; document.getElementById('commPhone').focus(); return; }
-
-    btn.disabled = true; btn.textContent = '⏳ যোগ দেওয়া হচ্ছে...';
-    note.textContent = '';
-
-    const normPhone = commNormalizePhone(phone);
-
-    try{
-      // Check if this phone number is already registered (fast index lookup first)
-      let existingUid = null;
-      const phoneIndexSnap = await get(ref(rtdb, `community_phones/${normPhone}`));
-      if(phoneIndexSnap.exists()){
-        existingUid = phoneIndexSnap.val();
-      } else {
-        // Fallback: scan all users for a matching phone (covers accounts created
-        // before the community_phones index existed)
-        const allUsersSnap = await get(ref(rtdb, 'community_users'));
-        if(allUsersSnap.exists()){
-          allUsersSnap.forEach(child=>{
-            if(existingUid) return;
-            const u = child.val();
-            if(commNormalizePhone(u.phone) === normPhone) existingUid = child.key;
-          });
-        }
-      }
-
-      if(existingUid){
-        const existingUserSnap = await get(ref(rtdb, `community_users/${existingUid}`));
-
-        if(existingUserSnap.exists()){
-          const existingUser = existingUserSnap.val();
-
-          // Backfill the phone index if this account predates it
-          if(!phoneIndexSnap.exists()){
-            set(ref(rtdb, `community_phones/${normPhone}`), existingUid).catch(()=>{});
-          }
-
-          // Case: same number + same name → restore the old account
-          if((existingUser.name||'').trim().toLowerCase() === name.toLowerCase()){
-            localStorage.setItem('comm_uid', existingUid);
-            localStorage.setItem('comm_username', existingUser.username);
-            commUid = existingUid;
-            commProfile = {name: existingUser.name, phone: existingUser.phone, username: existingUser.username};
-
-            await set(ref(rtdb, `community_users/${existingUid}/online`), true);
-            await set(ref(rtdb, `community_users/${existingUid}/lastSeen`), Date.now());
-
-            toast(`👋 আবার স্বাগতম, ${existingUser.name}! তোমার আগের একাউন্ট ফিরে এসেছে।`);
-            commShowMain();
-            return;
-          }
-
-          // Case: same number + different name → block, ask for a different number
-          note.textContent = '⚠️ এই নাম্বার already registered আছে। অন্য নাম্বার দিয়ে try করুন, অথবা আগের নাম দিয়ে login করুন।';
-          btn.disabled = false; btn.textContent = '✨ যোগ দিন';
-          return;
-        }
-      }
-
-      // No existing account for this phone — create a brand new one
-      const username = await commGenerateUsername(name);
-      const uid = 'cu_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-
-      await set(ref(rtdb, `community_users/${uid}`), {
-        name, phone, username,
-        createdAt: Date.now(),
-        lastSeen: Date.now(),
-        online: true
-      });
-      await set(ref(rtdb, `community_usernames/${username}`), uid);
-      await set(ref(rtdb, `community_phones/${normPhone}`), uid);
-
-      localStorage.setItem('comm_uid', uid);
-      localStorage.setItem('comm_username', username);
-      commUid = uid;
-      commProfile = {name, phone, username};
-
-      // Notify admin via telegram
-      fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,{
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({chat_id:TG_CHAT_ID, text:`👥 নতুন Community User!\n\n👤 নাম: ${name}\n📱 নাম্বার: ${phone}\n🆔 Username: @${username}`})
-      }).catch(()=>{});
-
-      toast(`🎉 স্বাগতম! তোমার username: @${username}`);
-      commShowMain();
-    }catch(e){
-      note.textContent = '❌ Error: '+e.message;
-      btn.disabled = false; btn.textContent = '✨ যোগ দিন';
-    }
-  };
-
-  function commShowLogoutConfirm(){
-    document.getElementById('commLogoutConfirm')?.remove();
-    const modal = document.createElement('div');
-    modal.id = 'commLogoutConfirm';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99997;display:flex;align-items:center;justify-content:center;padding:24px';
-    modal.innerHTML = `
-      <div style="background:#1a1a24;border:1px solid #2e2e40;border-radius:18px;padding:26px 22px;max-width:320px;width:100%;text-align:center;font-family:Poppins,sans-serif;color:#e8e8f0">
-        <div style="font-size:38px;margin-bottom:10px">🚪</div>
-        <div style="font-size:15px;font-weight:700;margin-bottom:8px">তুমি কি সত্যিই Logout করতে চাও?</div>
-        <div style="font-size:12px;color:#7a7a99;margin-bottom:20px;line-height:1.6">Logout করলে আবার login করতে তোমার আগের নাম ও নাম্বার লাগবে।</div>
-        <div style="display:flex;gap:10px">
-          <button onclick="document.getElementById('commLogoutConfirm').remove()" style="flex:1;background:#22222f;border:1px solid #2e2e40;color:#e8e8f0;border-radius:11px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">না</button>
-          <button onclick="commLogout()" style="flex:1;background:#ef4444;border:none;color:#fff;border-radius:11px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">হ্যাঁ, Logout</button>
-        </div>
-      </div>`;
-    document.body.appendChild(modal);
-  }
-
-  window.commLogout = function(){
-    document.getElementById('commLogoutConfirm')?.remove();
-    if(commUid) set(ref(rtdb, `community_users/${commUid}/online`), false).catch(()=>{});
-    if(commUnsubChatList){ try{ commUnsubChatList(); }catch(e){} commUnsubChatList=null; }
-    if(commUnsubChat){ try{ commUnsubChat(); }catch(e){} commUnsubChat=null; }
-    localStorage.removeItem('comm_uid');
-    localStorage.removeItem('comm_username');
-    commUid = null; commProfile = null;
-    commShowAuth();
-    toast('👋 Logout হয়েছে');
-  };
-
-  /* ── TABS ── */
-  window.commSetTab = function(tab, btn){
-    document.querySelectorAll('.comm-tab').forEach(b=>b.classList.remove('on'));
-    btn.classList.add('on');
-    document.getElementById('commChatList').style.display = tab==='chats' ? 'flex' : 'none';
-    document.getElementById('commSearchList').style.display = tab==='search' ? 'flex' : 'none';
-  };
-
-  /* ── SEARCH ── */
-  let commSearchTimeout = null;
-  window.commSearchUsers = function(){
-    clearTimeout(commSearchTimeout);
-    const q = document.getElementById('commSearchInp').value.trim().toLowerCase();
-    const list = document.getElementById('commSearchList');
-    // Switch to search tab automatically
-    document.getElementById('commTabSearch').click();
-
-    if(!q){ list.innerHTML = '<div class="comm-empty">Username লিখে search করুন</div>'; return; }
-
-    commSearchTimeout = setTimeout(async ()=>{
-      list.innerHTML = '<div class="comm-empty">🔍 খোঁজা হচ্ছে...</div>';
-      try{
-        const snap = await get(ref(rtdb, 'community_users'));
-        if(!snap.exists()){ list.innerHTML='<div class="comm-empty">কেউ পাওয়া যায়নি</div>'; return; }
-        const results = [];
-        snap.forEach(child=>{
-          const u = child.val();
-          const uid = child.key;
-          if(uid===commUid) return; // skip self
-          if(u.username && u.username.toLowerCase().includes(q)){
-            results.push({uid, ...u});
-          }
-        });
-        if(!results.length){ list.innerHTML='<div class="comm-empty">😔 কোনো user পাওয়া যায়নি</div>'; return; }
-        list.innerHTML = '';
-        results.slice(0,30).forEach(u=>{
-          const card = document.createElement('div');
-          card.className = 'comm-user-card';
-          card.innerHTML = `
-            <div class="comm-user-avatar">${commInitials(u.name)}${u.online?'<span class="comm-user-online-dot"></span>':''}</div>
-            <div class="comm-user-info">
-              <div class="comm-user-name">${commEsc(u.name)}</div>
-              <div class="comm-user-uname">@${commEsc(u.username)}</div>
-            </div>
-            <div class="comm-user-action">💬 Chat</div>
-          `;
-          card.onclick = ()=> commOpenChat(u.uid, u.name, u.username);
-          list.appendChild(card);
-        });
-      }catch(e){ list.innerHTML = '<div class="comm-empty">❌ Error হয়েছে</div>'; }
-    }, 350);
-  };
-
-  /* ── CHAT LIST (recent conversations) ── */
-  function commLoadChatList(){
-    if(!commUid){ console.warn('[Community] commLoadChatList: no commUid'); return; }
-    const listEl = document.getElementById('commChatList');
-    if(!listEl){ console.warn('[Community] commLoadChatList: #commChatList not found in DOM'); return; }
-
-    if(commUnsubChatList){ try{ commUnsubChatList(); }catch(e){} commUnsubChatList=null; }
-
-    const path = `community_meta/${commUid}/contacts`;
-    console.log('[Community] Listening to chat list at:', path);
-
-    commUnsubChatList = onValue(ref(rtdb, path), snap=>{
-      console.log('[Community] Chat list snapshot received. Exists:', snap.exists());
-      if(!snap.exists()){
-        listEl.innerHTML = '<div class="comm-empty">এখনো কারো সাথে chat করেননি। 🔍 Search করে কাউকে খুঁজুন!</div>';
-        return;
-      }
-      const contacts = [];
-      snap.forEach(child=>{
-        const val = child.val() || {};
-        contacts.push({ uid: child.key, otherName: val.otherName||'?', otherUname: val.otherUname||'', lastMsg: val.lastMsg||'', lastTs: val.lastTs||0 });
-      });
-      console.log('[Community] Contacts found:', contacts.length, contacts);
-      contacts.sort((a,b)=>(b.lastTs||0)-(a.lastTs||0));
-      listEl.innerHTML = '';
-      const frag = document.createDocumentFragment();
-      contacts.forEach(c=>{
-        const card = document.createElement('div');
-        card.className = 'comm-user-card';
-        const avatar = document.createElement('div');
-        avatar.className = 'comm-user-avatar';
-        avatar.textContent = commInitials(c.otherName);
-        const info = document.createElement('div');
-        info.className = 'comm-user-info';
-        const nameEl = document.createElement('div');
-        nameEl.className = 'comm-user-name';
-        nameEl.textContent = c.otherName;
-        const lastEl = document.createElement('div');
-        lastEl.className = 'comm-user-last';
-        lastEl.textContent = c.lastMsg;
-        info.appendChild(nameEl); info.appendChild(lastEl);
-        card.appendChild(avatar); card.appendChild(info);
-        card.addEventListener('click', ()=> commOpenChat(c.uid, c.otherName, c.otherUname));
-        frag.appendChild(card);
-      });
-      listEl.appendChild(frag);
-    }, (err)=>{
-      console.error('[Community] commLoadChatList onValue ERROR:', err);
-      listEl.innerHTML = '<div class="comm-empty">❌ Chat list লোড করতে সমস্যা হয়েছে। (Console দেখুন)</div>';
-    });
-  }
-
-  /* ── OPEN 1-1 CHAT ── */
-  window.commOpenChat = function(peerUid, peerName, peerUname){
-    if(!peerUid){ console.error('[Community] commOpenChat called without peerUid!'); return; }
-    commCurrentPeer = {uid:peerUid, name:peerName, username:peerUname};
-    document.getElementById('commMain').style.display = 'none';
-    document.getElementById('commChatWin').style.display = 'flex';
-    document.getElementById('ccAvatar').textContent = commInitials(peerName);
-    document.getElementById('ccName').textContent = peerName;
-    document.getElementById('ccUname').textContent = '@'+peerUname;
-
-    const area = document.getElementById('ccArea');
-    area.innerHTML = '<div class="comm-empty" id="ccEmpty">লোড হচ্ছে...</div>';
-
-    const roomId = commRoomId(commUid, peerUid);
-    const msgPath = `community_chats/${roomId}/messages`;
-    console.log('[Community] Opening chat. RoomId:', roomId, 'Path:', msgPath, 'My uid:', commUid, 'Peer uid:', peerUid);
-
-    // Properly detach the PREVIOUS chat's listener using its real unsubscribe function
-    if(commUnsubChat){ try{ commUnsubChat(); }catch(e){} commUnsubChat=null; }
-
-    let renderedAny = false;
-    const renderedIds = new Set();
-
-    function renderOneMessage(id, m){
-      if(renderedIds.has(id)) return; // never render the same message twice
-      renderedIds.add(id);
-
-      // Clear the "loading"/"empty" placeholder the first time we render something
-      if(!renderedAny){
-        area.innerHTML='';
-        renderedAny = true;
-      }
-
-      const row = document.createElement('div');
-      row.className = 'cc-msg ' + (m.from===commUid?'me':'them');
-      row.dataset.mid = id;
-      const t = new Date(m.ts||Date.now());
-      const timeStr = t.toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'});
-
-      if(m.type==='image'){
-        const bubble=document.createElement('div');
-        bubble.className='cc-bubble'; bubble.style.padding='5px';
-        const img=document.createElement('img');
-        img.src=m.mediaUrl; img.style.cssText='max-width:220px;border-radius:12px;display:block;cursor:pointer';
-        img.onclick=()=>{ if(window.openLightbox) window.openLightbox(m.mediaUrl); };
-        bubble.appendChild(img);
-        row.appendChild(bubble);
-      } else if(m.type==='video'){
-        const bubble=document.createElement('div');
-        bubble.className='cc-bubble'; bubble.style.padding='5px';
-        const vid=document.createElement('video');
-        vid.src=m.mediaUrl; vid.controls=true; vid.style.cssText='max-width:220px;border-radius:12px;display:block;max-height:260px';
-        bubble.appendChild(vid);
-        row.appendChild(bubble);
-      } else {
-        const bubble=document.createElement('div');
-        bubble.className='cc-bubble'; bubble.textContent=m.text||'';
-        row.appendChild(bubble);
-      }
-      const timeEl=document.createElement('div'); timeEl.className='cc-time'; timeEl.textContent=timeStr;
-      row.appendChild(timeEl);
-      area.appendChild(row);
-      area.scrollTop = area.scrollHeight;
-      console.log('[Community] Rendered message id=', id, 'total rendered so far:', renderedIds.size);
-    }
-
-    // onChildAdded fires ONCE for every existing message (in order) on first attach,
-    // then again for every NEW message pushed afterwards — this avoids any
-    // "snapshot only shows 1 item" issue because we never re-derive the full list.
-    commUnsubChat = onChildAdded(ref(rtdb, msgPath), (childSnap)=>{
-      const id = childSnap.key;
-      const m = childSnap.val();
-      console.log('[Community] onChildAdded fired. id=', id, 'data=', JSON.stringify(m));
-      renderOneMessage(id, m);
-    }, (err)=>{
-      console.error('[Community] commOpenChat onChildAdded ERROR for room', roomId, ':', err);
-      area.innerHTML = '<div class="comm-empty">❌ মেসেজ লোড করতে সমস্যা হয়েছে। (Console দেখুন)</div>';
-    });
-
-    // If after a short delay nothing was rendered, show the friendly empty state
-    setTimeout(()=>{
-      if(!renderedAny){
-        area.innerHTML = '<div class="comm-empty">এখনো কোনো মেসেজ নেই। কিছু লিখুন! 👋</div>';
-      }
-    }, 800);
-  };
-
-  window.commCloseChat = function(){
-    document.getElementById('commChatWin').style.display = 'none';
-    document.getElementById('commMain').style.display = 'flex';
-    commCurrentPeer = null;
-    if(commUnsubChat){ try{ commUnsubChat(); }catch(e){} commUnsubChat=null; }
-  };
-
-  window.commHandleKey = function(e){
-    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); window.commSendMsg(); }
-  };
-  window.commAutoResize = function(el){
-    el.style.height=''; el.style.height = Math.min(el.scrollHeight,100)+'px';
-  };
-
-  window.commSendMsg = async function(){
-    if(!commCurrentPeer || !commUid){ console.warn('[Community] commSendMsg: missing peer or uid', {commCurrentPeer, commUid}); return; }
-    const inp = document.getElementById('ccInput');
-    const text = inp.value.trim();
-    if(!text) return;
-    inp.value=''; inp.style.height='';
-
-    const roomId = commRoomId(commUid, commCurrentPeer.uid);
-    const now = Date.now();
-    console.log('[Community] Sending message. RoomId:', roomId, 'From:', commUid, 'To:', commCurrentPeer.uid, 'Text:', text);
-
-    // 1) Save the actual message FIRST and independently — this must succeed
-    //    even if the metadata writes below fail for any reason.
-    try{
-      const msgRef = await push(ref(rtdb, `community_chats/${roomId}/messages`), {
-        from: commUid, text, ts: now
-      });
-      console.log('[Community] Message saved with key:', msgRef.key);
-    }catch(e){
-      toast('❌ Message পাঠানো যায়নি: '+(e.message||'Unknown error'));
-      console.error('[Community] commSendMsg: message push FAILED', e);
-      return;
-    }
-
-    // 2) Update contact metadata for both users — run independently so a failure
-    //    on one path (e.g. receiver's node) doesn't block the other or hide an error.
-    async function commWriteMetaWithRetry(path, data, label, retries){
-      for(let attempt=0; attempt<=retries; attempt++){
-        try{
-          await set(ref(rtdb, path), data);
-          console.log(`[Community] Metadata write (${label}) OK on attempt ${attempt+1}`);
-          return true;
-        }catch(e){
-          console.error(`[Community] Metadata write (${label}) FAILED on attempt ${attempt+1}:`, e);
-          if(attempt===retries){
-            toast(`⚠️ ${label} metadata সেভ হয়নি! Console দেখুন।`);
-            return false;
-          }
-          await new Promise(r=>setTimeout(r, 400));
-        }
-      }
-    }
-
-    await Promise.all([
-      commWriteMetaWithRetry(
-        `community_meta/${commUid}/contacts/${commCurrentPeer.uid}`,
-        { otherName: commCurrentPeer.name||'', otherUname: commCurrentPeer.username||'', lastMsg: text, lastTs: now },
-        'sender-side contact', 2
-      ),
-      commWriteMetaWithRetry(
-        `community_meta/${commCurrentPeer.uid}/contacts/${commUid}`,
-        { otherName: (commProfile&&commProfile.name)||'', otherUname: (commProfile&&commProfile.username)||'', lastMsg: text, lastTs: now },
-        'receiver-side contact', 2
-      )
-    ]);
-
-    // 3) Admin monitoring log — best-effort, never blocks the chat itself
-    push(ref(rtdb, `community_admin_log`), {
-      from: (commProfile&&commProfile.name)||'', fromUname: (commProfile&&commProfile.username)||'',
-      to: commCurrentPeer.name||'', toUname: commCurrentPeer.username||'',
-      text, ts: now
-    }).catch(e=>console.error('[Community] commSendMsg: admin log failed', e));
-  };
-
-  /* ── Community chat: Photo/Video upload (reuses Cloudinary, same as personal chat) ── */
-  window.commHandleFileSelect = async function(event){
-    const file = event.target.files[0];
-    if(!file) return;
-    if(!commCurrentPeer || !commUid){ toast('⚠️ কোনো chat খোলা নেই'); event.target.value=''; return; }
-
-    const isVideo = file.type.startsWith('video/');
-    const isImage = file.type.startsWith('image/');
-    if(!isVideo && !isImage){ toast('❌ শুধু Photo বা Video পাঠান!'); event.target.value=''; return; }
-
-    const maxSize = isVideo ? 50*1024*1024 : 15*1024*1024;
-    if(file.size > maxSize){ toast(`❌ File অনেক বড়! Max ${isVideo?'50MB':'15MB'}`); event.target.value=''; return; }
-
-    const prog = document.getElementById('uploadProgress');
-    const bar = document.getElementById('progBar');
-    const pct = document.getElementById('progPct');
-    prog.classList.add('show'); bar.style.width='5%'; pct.textContent='Upload হচ্ছে...';
-
-    try{
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', CLD_PRESET);
-      formData.append('folder', 'community_media');
-
-      const resourceType = isVideo ? 'video' : 'image';
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLD_CLOUD}/${resourceType}/upload`);
-
-      xhr.upload.onprogress = e=>{
-        if(e.lengthComputable){
-          const p = Math.round(e.loaded/e.total*100);
-          bar.style.width = p+'%'; pct.textContent = p+'%';
-        }
-      };
-
-      xhr.onload = async ()=>{
-        prog.classList.remove('show'); bar.style.width='0%';
-        if(xhr.status===200){
-          const res = JSON.parse(xhr.responseText);
-          const url = res.secure_url;
-          const roomId = commRoomId(commUid, commCurrentPeer.uid);
-          const now = Date.now();
-          const lastMsgLabel = isVideo ? '📹 Video' : '📷 Photo';
-
-          // 1) Save the actual message FIRST and independently
-          try{
-            await push(ref(rtdb, `community_chats/${roomId}/messages`), {
-              from: commUid, type: isVideo?'video':'image', mediaUrl: url, text:'', ts: now
-            });
-          }catch(e){
-            toast('❌ Message সেভ করা যায়নি: '+(e.message||'Unknown error'));
-            console.error('commHandleFileSelect: message push failed', e);
-            return;
-          }
-
-          // 2) Metadata writes — independent, won't hide each other's errors
-          const metaResults = await Promise.allSettled([
-            set(ref(rtdb, `community_meta/${commUid}/contacts/${commCurrentPeer.uid}`), {
-              otherName: commCurrentPeer.name||'', otherUname: commCurrentPeer.username||'',
-              lastMsg: lastMsgLabel, lastTs: now
-            }),
-            set(ref(rtdb, `community_meta/${commCurrentPeer.uid}/contacts/${commUid}`), {
-              otherName: (commProfile&&commProfile.name)||'', otherUname: (commProfile&&commProfile.username)||'',
-              lastMsg: lastMsgLabel, lastTs: now
-            })
-          ]);
-          metaResults.forEach((r,i)=>{
-            if(r.status==='rejected') console.error(`commHandleFileSelect: metadata write ${i===0?'(sender)':'(receiver)'} failed`, r.reason);
-          });
-
-          push(ref(rtdb, `community_admin_log`), {
-            from: (commProfile&&commProfile.name)||'', fromUname: (commProfile&&commProfile.username)||'',
-            to: commCurrentPeer.name||'', toUname: commCurrentPeer.username||'',
-            text: `[${lastMsgLabel} পাঠিয়েছেন]`, ts: now
-          }).catch(e=>console.error('commHandleFileSelect: admin log failed', e));
-
-          toast('✅ পাঠানো হয়েছে!');
-        } else {
-          toast('❌ Upload failed হয়েছে');
-        }
-      };
-      xhr.onerror = ()=>{ prog.classList.remove('show'); toast('❌ Network error'); };
-      xhr.send(formData);
-    }catch(e){ prog.classList.remove('show'); toast('❌ Error: '+e.message); }
-    event.target.value='';
-  };
-
-  /* ── COMMUNITY CALL (reuses existing call UI/WebRTC, separate signaling path) ── */
-  let commPC=null, commLocalStream=null, commCallType='audio', commCallRoomId=null;
-  let commUnsubCallDoc=null, commUnsubPeerCands=null;
-  let commPendingPeerCands=[], commRemoteDescSet=false, commIsCaller=false;
-  // Expose on window so shared call-control buttons (mute/cam/flip/screenshare/end) can detect active community call
-  Object.defineProperty(window,'commPC',{get:()=>commPC,configurable:true});
-  Object.defineProperty(window,'commLocalStream',{get:()=>commLocalStream,configurable:true});
-  Object.defineProperty(window,'commCallRoomId',{get:()=>commCallRoomId,configurable:true});
-
-  function commCallRef(roomId){ return ref(rtdb, `community_calls/${roomId}`); }
-
-  async function commDrainPeerCands(){
-    if(!commPC || !commPendingPeerCands.length) return;
-    const toAdd=[...commPendingPeerCands]; commPendingPeerCands=[];
-    for(const c of toAdd){ try{await commPC.addIceCandidate(new RTCIceCandidate(c));}catch(e){} }
-  }
-
-  function commNewPC(){
-    const p = new RTCPeerConnection(ICE_SERVERS);
-    commPendingPeerCands=[]; commRemoteDescSet=false;
-    p.onicecandidate = (e)=>{
-      if(e.candidate && commCallRoomId){
-        const myRole = commIsCaller ? 'callerCandidates' : 'calleeCandidates';
-        push(ref(rtdb, `community_calls/${commCallRoomId}/${myRole}`), e.candidate.toJSON()).catch(()=>{});
-      }
-    };
-    p.ontrack = (e)=>{
-      const rv = document.getElementById('remoteVideo');
-      if(rv){ rv.srcObject = e.streams[0]; }
-      setCoStatus('সংযুক্ত হয়েছে', true);
-      if(!callTimerInt) startTimerUI();
-    };
-    p.onconnectionstatechange = ()=>{
-      if(p.connectionState==='disconnected' || p.connectionState==='failed'){
-        toast('📞 Call বিচ্ছিন্ন হয়ে গেছে');
-        window.commEndCall();
-      }
-    };
-    return p;
-  }
-
-  window.commStartCall = async function(type){
-    if(!commCurrentPeer){ toast('⚠️ আগে কাউকে select করুন'); return; }
-    if(commCallRoomId){ toast('⚠️ আগের call শেষ হয়নি, একটু wait করুন'); return; }
-    commCallType = type;
-    commIsCaller = true;
-    commCallRoomId = commRoomId(commUid, commCurrentPeer.uid);
-
-    try{
-      commLocalStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: type==='video' ? {facingMode:'user'} : false
-      });
-    }catch(e){ toast('❌ Camera/Mic permission দিতে হবে!'); commCallRoomId=null; return; }
-
-    document.getElementById('coAvatar').style.display='none';
-    document.getElementById('commCallAvatarBig')?.remove();
-    document.getElementById('coAudioBg').insertAdjacentHTML('afterbegin', `<div class="comm-call-avatar-big" id="commCallAvatarBig">${commInitials(commCurrentPeer.name)}</div>`);
-    document.querySelector('.co-name').textContent = commCurrentPeer.name;
-    setCoStatus('Calling...', false);
-    callOverlayShow();
-
-    const localVideo = document.getElementById('localVideo');
-    if(type==='video'){
-      localVideo.srcObject = commLocalStream;
-      showVideoUI();
-    } else {
-      document.getElementById('coAudioBg').classList.remove('hidden');
-    }
-
-    commPC = commNewPC();
-    commLocalStream.getTracks().forEach(t=> commPC.addTrack(t, commLocalStream));
-
-    const offer = await commPC.createOffer();
-    await commPC.setLocalDescription(offer);
-
-    // Clean any stale data at this roomId first (in case previous call wasn't cleared)
-    try{ await remove(commCallRef(commCallRoomId)); }catch(e){}
-
-    await set(commCallRef(commCallRoomId), {
-      callerUid: commUid, callerName: commProfile.name, callerUname: commProfile.username,
-      calleeUid: commCurrentPeer.uid, calleeName: commCurrentPeer.name,
-      type, status: 'ringing', offer: {type:offer.type, sdp:offer.sdp},
-      ts: Date.now()
-    });
-
-    // Telegram notify for missed-call visibility
-    fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({chat_id:TG_CHAT_ID, text:`📞 Community Call!\n\n${commProfile.name} (@${commProfile.username}) → ${commCurrentPeer.name} (@${commCurrentPeer.username})\n🎥 Type: ${type}`})
-    }).catch(()=>{});
-
-    commListenCallDoc(commCallRoomId, true);
-  };
-
-  function commListenCallDoc(roomId, isCaller){
-    // Detach any previous call-doc listener cleanly using its real unsubscribe function
-    if(typeof commUnsubCallDoc === 'function'){ try{ commUnsubCallDoc(); }catch(e){} commUnsubCallDoc=null; }
-    if(typeof commUnsubPeerCands === 'function'){ try{ commUnsubPeerCands(); }catch(e){} commUnsubPeerCands=null; }
-
-    commUnsubCallDoc = onValue(commCallRef(roomId), async snap=>{
-      if(!snap.exists()){
-        // Room was deleted (call ended by either side) — make sure our UI is cleaned up
-        if(commCallRoomId===roomId) window.commEndCall(true);
-        return;
-      }
-      const d = snap.val();
-      if(!d) return;
-
-      if(isCaller){
-        if(d.status==='accepted' && d.answer && !commRemoteDescSet){
-          commRemoteDescSet = true;
-          try{
-            await commPC.setRemoteDescription(new RTCSessionDescription(d.answer));
-            await commDrainPeerCands();
-          }catch(e){}
-          setCoStatus('সংযুক্ত হচ্ছে...', false);
-        }
-        if(d.status==='rejected'){
-          toast('❌ Call reject করা হয়েছে');
-          window.commEndCall(true);
-        }
-      }
-      if(d.status==='ended'){
-        toast('📞 Call শেষ হয়েছে');
-        window.commEndCall(true);
-      }
-    });
-
-    // Listen to opposite side's ICE candidates
-    const peerCandPath = isCaller ? 'calleeCandidates' : 'callerCandidates';
-    commUnsubPeerCands = onValue(ref(rtdb, `community_calls/${roomId}/${peerCandPath}`), candSnap=>{
-      if(!candSnap.exists()) return;
-      candSnap.forEach(child=>{
-        const cand = child.val();
-        if(commRemoteDescSet && commPC){
-          commPC.addIceCandidate(new RTCIceCandidate(cand)).catch(()=>{});
-        } else {
-          commPendingPeerCands.push(cand);
-        }
-      });
-    });
-  }
-
-  // Incoming community call listener (always active once registered) — listens ONLY to top-level child_added/value
-  // to avoid re-triggering on every nested candidate write.
-  let commIncomingUnsub = null;
-  let commActiveIncomingRoomId = null;
-  function commListenIncomingCalls(){
-    if(!commUid) return;
-    if(commIncomingUnsub){ try{ commIncomingUnsub(); }catch(e){} commIncomingUnsub=null; }
-    commIncomingUnsub = onValue(ref(rtdb, 'community_calls'), snap=>{
-      if(!snap.exists()) return;
-      let found=false;
-      snap.forEach(child=>{
-        const roomId = child.key;
-        const d = child.val();
-        if(d && d.calleeUid===commUid && d.status==='ringing'){
-          found=true;
-          // Don't show twice for the same incoming call, and don't show if we're already in a call
-          if(commActiveIncomingRoomId!==roomId && !commCallRoomId && !document.getElementById('commIncomingModal')){
-            commActiveIncomingRoomId = roomId;
-            commShowIncomingCall(roomId, d);
-          }
-        }
-      });
-      if(!found){
-        commActiveIncomingRoomId = null;
-        document.getElementById('commIncomingModal')?.remove();
-      }
-    });
-  }
-
-  function commShowIncomingCall(roomId, d){
-    document.getElementById('commIncomingModal')?.remove();
-    const modal = document.createElement('div');
-    modal.id = 'commIncomingModal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;color:#fff;font-family:Poppins,sans-serif';
-    modal.innerHTML = `
-      <div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#9c8fff,#ff6584);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700">${commInitials(d.callerName)}</div>
-      <div style="font-size:18px;font-weight:700">${commEsc(d.callerName)}</div>
-      <div style="font-size:13px;color:#9ca3af">${d.type==='video'?'📹 Video':'📞 Audio'} call আসছে...</div>
-      <div style="display:flex;gap:20px;margin-top:14px">
-        <button onclick="commAcceptCall('${roomId}')" style="width:60px;height:60px;border-radius:50%;background:#4ade80;border:none;font-size:24px;cursor:pointer">✅</button>
-        <button onclick="commRejectCall('${roomId}')" style="width:60px;height:60px;border-radius:50%;background:#ef4444;border:none;font-size:24px;cursor:pointer">❌</button>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  }
-
-  window.commAcceptCall = async function(roomId){
-    document.getElementById('commIncomingModal')?.remove();
-    commActiveIncomingRoomId = null;
-    commCallRoomId = roomId;
-    commIsCaller = false;
-
-    const snap = await get(commCallRef(roomId));
-    const d = snap.val();
-    if(!d){ toast('❌ Call পাওয়া যায়নি'); commCallRoomId=null; return; }
-    commCallType = d.type;
-    commCurrentPeer = {uid: d.callerUid, name: d.callerName, username: d.callerUname||''};
-
-    try{
-      commLocalStream = await navigator.mediaDevices.getUserMedia({
-        audio:true, video: d.type==='video' ? {facingMode:'user'} : false
-      });
-    }catch(e){ toast('❌ Camera/Mic permission দিতে হবে!'); commCallRoomId=null; return; }
-
-    document.getElementById('coAvatar').style.display='none';
-    document.getElementById('commCallAvatarBig')?.remove();
-    document.getElementById('coAudioBg').insertAdjacentHTML('afterbegin', `<div class="comm-call-avatar-big" id="commCallAvatarBig">${commInitials(d.callerName)}</div>`);
-    document.querySelector('.co-name').textContent = d.callerName;
-    setCoStatus('সংযুক্ত হচ্ছে...', false);
-    callOverlayShow();
-
-    const localVideo = document.getElementById('localVideo');
-    if(d.type==='video'){ localVideo.srcObject = commLocalStream; showVideoUI(); }
-    else document.getElementById('coAudioBg').classList.remove('hidden');
-
-    commPC = commNewPC();
-    commLocalStream.getTracks().forEach(t=> commPC.addTrack(t, commLocalStream));
-
-    await commPC.setRemoteDescription(new RTCSessionDescription(d.offer));
-    commRemoteDescSet = true;
-    await commDrainPeerCands();
-
-    const answer = await commPC.createAnswer();
-    await commPC.setLocalDescription(answer);
-
-    await update(commCallRef(roomId), {
-      status:'accepted', answer:{type:answer.type, sdp:answer.sdp}
-    });
-
-    commListenCallDoc(roomId, false);
-  };
-
-  window.commRejectCall = async function(roomId){
-    document.getElementById('commIncomingModal')?.remove();
-    commActiveIncomingRoomId = null;
-    try{ await update(commCallRef(roomId), {status:'rejected'}); }catch(e){}
-    setTimeout(()=>{ remove(commCallRef(roomId)).catch(()=>{}); }, 1000);
-  };
-
-  window.commEndCall = async function(remoteTriggered){
-    callOverlayHide();
-    stopTimerUI();
-    document.getElementById('commCallAvatarBig')?.remove();
-    document.getElementById('coAvatar').style.display='block';
-    document.getElementById('coAudioBg').classList.remove('hidden');
-    document.getElementById('remoteVideo').classList.add('hidden');
-    document.getElementById('localVideo').classList.add('hidden');
-    document.getElementById('camBtn').style.display='none';
-    document.getElementById('camLbl').style.display='none';
-    document.getElementById('flipBtn').style.display='none';
-    document.getElementById('flipLbl').style.display='none';
-    document.getElementById('screenShareBtn').style.display='none';
-    document.getElementById('screenShareLbl').style.display='none';
-    if(isScreenSharing) stopScreenShare();
-
-    if(commPC){ try{commPC.close();}catch(e){} commPC=null; }
-    if(commLocalStream){ commLocalStream.getTracks().forEach(t=>t.stop()); commLocalStream=null; }
-
-    // Detach listeners properly using the real unsubscribe functions
-    if(typeof commUnsubCallDoc === 'function'){ try{ commUnsubCallDoc(); }catch(e){} commUnsubCallDoc=null; }
-    if(typeof commUnsubPeerCands === 'function'){ try{ commUnsubPeerCands(); }catch(e){} commUnsubPeerCands=null; }
-
-    const roomToClean = commCallRoomId;
-    commCallRoomId=null; commRemoteDescSet=false; commPendingPeerCands=[]; commIsCaller=false;
-
-    if(roomToClean && !remoteTriggered){
-      try{ await update(commCallRef(roomToClean), {status:'ended'}); }catch(e){}
-      setTimeout(()=>{ remove(commCallRef(roomToClean)).catch(()=>{}); }, 1200);
-    }
-  };
-
-
 </script>
 
 <!-- ADMIN PANEL -->
@@ -2622,31 +1474,6 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
       </div>
       <div class="qa-list" id="qaAnswerList">
         <div class="sct">Q&A উত্তরগুলো</div>
-        <div class="nm">লোড হচ্ছে...</div>
-      </div>
-      <div class="qa-ctrl" style="border-top:2px solid #4ade80">
-        <div class="qa-title" style="color:#4ade80">👥 Community Monitoring</div>
-        <div id="commAdminStats" style="display:flex;gap:8px;margin-bottom:10px">
-          <div style="flex:1;background:#0f0f13;border:1px solid #2e2e40;border-radius:9px;padding:8px;text-align:center">
-            <div id="commTotalUsers" style="font-size:18px;font-weight:700;color:#4ade80">0</div>
-            <div style="font-size:9px;color:#7a7a99">Total Users</div>
-          </div>
-          <div style="flex:1;background:#0f0f13;border:1px solid #2e2e40;border-radius:9px;padding:8px;text-align:center">
-            <div id="commOnlineUsers" style="font-size:18px;font-weight:700;color:#4ade80">0</div>
-            <div style="font-size:9px;color:#7a7a99">Online এখন</div>
-          </div>
-        </div>
-        <input type="text" id="commAdminSearch" placeholder="🔍 নাম, username, নাম্বার বা uid দিয়ে খুঁজুন..." style="width:100%;background:#22222f;border:1px solid #2e2e40;border-radius:8px;padding:8px;color:#e8e8f0;font-family:inherit;font-size:12px;outline:none;margin-bottom:8px" oninput="commAdminFilterUsers()">
-      </div>
-      <div class="qa-list" id="commUserList">
-        <div class="sct">সব Community Users</div>
-        <div class="nm">লোড হচ্ছে...</div>
-      </div>
-      <div class="qa-ctrl" style="border-top:2px solid #4ade80">
-        <div class="qa-title" style="color:#4ade80">📋 Live Conversation Log</div>
-        <div style="font-size:10px;color:#7a7a99">কে কার সাথে কথা বলছে — সর্বশেষ ৫০টা মেসেজ</div>
-      </div>
-      <div class="qa-list" id="commLogList">
         <div class="nm">লোড হচ্ছে...</div>
       </div>
     </div>
@@ -2826,90 +1653,6 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
       }catch(e){window.toast('Error: '+e.message);}
     };
 
-    /* ══════════════════ COMMUNITY MONITORING (ADMIN) ══════════════════ */
-    function commAdminEsc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-    function commAdminInitials(n){return (n||'?').trim().charAt(0).toUpperCase();}
-
-    let _commAllUsers = [];
-
-    function commAdminRenderUsers(users){
-      const list = document.getElementById('commUserList');
-      if(!list) return;
-      list.innerHTML = '<div class="sct">সব Community Users</div>';
-      if(!users.length){ list.innerHTML += '<div class="nm">এখনো কোনো user নেই</div>'; return; }
-      users.forEach(u=>{
-        const card = document.createElement('div');
-        card.style.cssText = 'background:#1a1a24;border:1px solid #2e2e40;border-radius:9px;padding:9px 11px;margin-bottom:6px;display:flex;align-items:center;gap:10px';
-        card.innerHTML = `
-          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#9c8fff,#ff6584);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;position:relative">
-            ${commAdminInitials(u.name)}
-            ${u.online?'<span style="position:absolute;bottom:-1px;right:-1px;width:9px;height:9px;border-radius:50%;background:#4ade80;border:2px solid #1a1a24"></span>':''}
-          </div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:600;color:#fff">${commAdminEsc(u.name)} <span style="font-size:10px;color:#6c63ff">@${commAdminEsc(u.username)}</span></div>
-            <div style="font-size:10px;color:#7a7a99">📱 ${commAdminEsc(u.phone||'—')}</div>
-            <div style="font-size:9px;color:#5a5a72;margin-top:2px;font-family:monospace">${commAdminEsc(u.uid||'')}</div>
-          </div>
-          <div style="font-size:9px;color:${u.online?'#4ade80':'#7a7a99'}">${u.online?'● Online':'Offline'}</div>
-        `;
-        list.appendChild(card);
-      });
-    }
-
-    window.commAdminFilterUsers = function(){
-      const q = (document.getElementById('commAdminSearch')?.value||'').toLowerCase();
-      if(!q){ commAdminRenderUsers(_commAllUsers); return; }
-      const filtered = _commAllUsers.filter(u =>
-        (u.name||'').toLowerCase().includes(q) ||
-        (u.username||'').toLowerCase().includes(q) ||
-        (u.phone||'').replace(/[^\d]/g,'').includes(q.replace(/[^\d]/g,'')) ||
-        (u.uid||'').toLowerCase().includes(q)
-      );
-      commAdminRenderUsers(filtered);
-    };
-
-    // Live listener for all community users
-    onValue(ref(rtdb2, 'community_users'), snap=>{
-      _commAllUsers = [];
-      let onlineCount = 0;
-      if(snap.exists()){
-        snap.forEach(child=>{
-          const u = child.val();
-          _commAllUsers.push({uid: child.key, ...u});
-          if(u.online) onlineCount++;
-        });
-      }
-      _commAllUsers.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-      document.getElementById('commTotalUsers').textContent = _commAllUsers.length;
-      document.getElementById('commOnlineUsers').textContent = onlineCount;
-      // Re-apply current filter if any
-      const q = document.getElementById('commAdminSearch')?.value;
-      if(q) window.commAdminFilterUsers(); else commAdminRenderUsers(_commAllUsers);
-    });
-
-    // Live listener for community conversation log (who's talking to whom)
-    onValue(ref(rtdb2, 'community_admin_log'), snap=>{
-      const list = document.getElementById('commLogList');
-      if(!list) return;
-      if(!snap.exists()){ list.innerHTML = '<div class="nm">এখনো কোনো কথোপকথন নেই</div>'; return; }
-      const logs = [];
-      snap.forEach(child=> logs.push({id:child.key, ...child.val()}));
-      logs.sort((a,b)=>(b.ts||0)-(a.ts||0));
-      const recent = logs.slice(0,50);
-      list.innerHTML = '';
-      recent.forEach(l=>{
-        const t = new Date(l.ts||Date.now());
-        const card = document.createElement('div');
-        card.style.cssText = 'background:#1a1a24;border:1px solid #2e2e40;border-radius:9px;padding:8px 10px;margin-bottom:5px';
-        card.innerHTML = `
-          <div style="font-size:11px;color:#9c8fff;font-weight:600">${commAdminEsc(l.from)} <span style="color:#7a7a99">→</span> ${commAdminEsc(l.to)}</div>
-          <div style="font-size:11px;color:#e8e8f0;margin-top:3px">${commAdminEsc(l.text)}</div>
-          <div style="font-size:9px;color:#7a7a99;margin-top:3px">${t.toLocaleTimeString('bn-BD',{hour:'2-digit',minute:'2-digit'})}</div>
-        `;
-        list.appendChild(card);
-      });
-    });
-
     /* ══════════════════ WEBRTC CALL SYSTEM (ADMIN SIDE) ══════════════════ */
     const ICE_SERVERS2={iceServers:[
       {urls:'stun:stun.l.google.com:19302'},
@@ -2988,7 +1731,9 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
     }
 
     /* ── Watch Firebase 'calls' node for incoming calls ── */
+    console.log('[ADMIN CALL DEBUG] Registering listener on calls node...');
     onValue(ref(rtdb2,'calls'),snap=>{
+      console.log('[ADMIN CALL DEBUG] Snapshot received. Exists:', snap.exists(), 'Value:', JSON.stringify(snap.val()));
       if(!snap.exists()){
         // No calls at all — clear any stale ringing
         Object.keys(knownRinging).forEach(id=>{
@@ -3000,8 +1745,10 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
       const all=snap.val();
       // Show new incoming calls
       Object.entries(all).forEach(([callSid,d])=>{
+        console.log('[ADMIN CALL DEBUG] Checking call:', callSid, 'status:', d?.status, 'knownRinging:', !!knownRinging[callSid], 'activeCallSid:', activeCallSid);
         if(!d||typeof d!=='object')return;
         if(d.status==='ringing'&&!knownRinging[callSid]&&!activeCallSid){
+          console.log('[ADMIN CALL DEBUG] ✅ Showing incoming call toast for:', callSid);
           knownRinging[callSid]=true;
           showAdminIncoming(callSid,d);
         }
@@ -3018,6 +1765,7 @@ if(new URLSearchParams(location.search).get('admin')==='fahim123'){
         }
       });
     },err=>{
+      console.error('[ADMIN CALL DEBUG] ❌ Firebase listener error:', err.message, err);
       window.toast('⚠️ Firebase read error: '+err.message);
     });
 
