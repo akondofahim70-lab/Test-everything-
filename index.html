@@ -501,7 +501,7 @@
     .co-timer{font-size:14px;color:rgba(255,255,255,.75);font-variant-numeric:tabular-nums;letter-spacing:1px}
 
     #remoteVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;z-index:2}
-    #remoteVideo.hidden{display:none}
+    #remoteVideo.hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1}
     #localVideo{
       position:absolute;top:16px;right:16px;width:95px;height:135px;border-radius:16px;
       object-fit:cover;background:#111;z-index:10;border:2px solid rgba(255,255,255,.25);
@@ -957,6 +957,7 @@
 <div id="callOverlay">
   <video id="remoteVideo" autoplay playsinline class="hidden"></video>
   <video id="localVideo" autoplay playsinline muted class="hidden" onclick="swapVideos()"></video>
+  <audio id="remoteAudio" autoplay playsinline style="display:none"></audio>
 
   <div class="co-audio-bg" id="coAudioBg">
     <img class="co-avatar" id="coAvatar" src="https://i.postimg.cc/0M9YSHg7/20250826-171504-1.jpg" alt="User">
@@ -2051,21 +2052,34 @@ if(document.readyState === 'complete' || document.readyState === 'interactive'){
 
   function cleanupCallUI(){
     clearTimeout(callTimeoutTimer);
+    clearTimeout(commCallTimeout);
     soundEngine.stopCallSounds();
     document.getElementById('callOverlay').classList.remove('open');
     stopTimerUI();
-    const rv = document.getElementById('remoteVideo'), lv = document.getElementById('localVideo');
+    const rv = document.getElementById('remoteVideo'), lv = document.getElementById('localVideo'), ra = document.getElementById('remoteAudio');
     if(rv){ rv.srcObject = null; rv.classList.add('hidden'); rv.classList.remove('swapped'); }
     if(lv){ lv.srcObject = null; lv.classList.add('hidden'); lv.classList.remove('swapped'); }
+    if(ra){ ra.srcObject = null; }
     const bg = document.getElementById('coAudioBg');
     if(bg) bg.classList.remove('hidden');
     const av = document.getElementById('coAvatar');
-    if(av) av.classList.remove('ringing');
+    if(av) { av.style.display = 'block'; av.classList.remove('ringing'); }
     document.getElementById('commCallAvatarBig')?.remove();
+
+    document.getElementById('camBtn').style.display = 'none';
+    document.getElementById('camLbl').style.display = 'none';
+    document.getElementById('flipBtn').style.display = 'none';
+    document.getElementById('flipLbl').style.display = 'none';
+    const mb = document.getElementById('muteBtn');
+    if(mb){ mb.classList.remove('active'); mb.textContent = '🎤'; }
+    const cb = document.getElementById('camBtn');
+    if(cb){ cb.classList.remove('active'); cb.textContent = '📷'; }
 
     if(_screenStream){ _screenStream.getTracks().forEach(t => t.stop()); _screenStream = null; }
     if(localStream){ localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-    if(pc){ pc.close(); pc = null; }
+    if(pc){ try{ pc.close(); }catch(e){} pc = null; }
+    if(commLocalStream){ commLocalStream.getTracks().forEach(t => t.stop()); commLocalStream = null; }
+    if(commPC){ try{ commPC.close(); }catch(e){} commPC = null; }
     if(unsubCallDoc){ unsubCallDoc(); unsubCallDoc = null; }
     if(unsubAdminCands){ unsubAdminCands(); unsubAdminCands = null; }
   }
@@ -2325,52 +2339,116 @@ if(document.readyState === 'complete' || document.readyState === 'interactive'){
   /* Community Peer-to-Peer Calling */
   let commPC = null, commLocalStream = null, commCallRoomId = null;
   let commCallTimeout = null;
+  let commCallerRemoteDescSet = false, commPendingCalleeCandidates = [];
+  let commCalleeRemoteDescSet = false, commPendingCallerCandidates = [];
+  let unsubIncomingCommCalls = null;
+  let unsubCommCallDoc = null, unsubCommCalleeCands = null, unsubCommCallerCands = null;
+
   Object.defineProperty(window, 'commPC', { get: () => commPC, configurable: true });
   Object.defineProperty(window, 'commLocalStream', { get: () => commLocalStream, configurable: true });
   Object.defineProperty(window, 'commCallRoomId', { get: () => commCallRoomId, configurable: true });
 
   window.commStartCall = async function(type){
     if(!commCurrentPeer || commCallRoomId) return;
+    if(!commUid){ toast('⚠️ কল করার জন্য কমিউনিটিতে একাউন্ট থাকতে হবে!'); return; }
+
+    const isVideo = (type === 'video');
     commCallRoomId = commRoomId(commUid, commCurrentPeer.uid);
 
     try{
-      commLocalStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' });
-    }catch(e){ toast('❌ Camera/Mic permission দেওয়া হয়নি!'); commCallRoomId = null; return; }
+      commLocalStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: isVideo ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } : false
+      });
+    }catch(e){
+      toast('❌ ক্যামেরা বা মাইক্রোফোনের পারমিশন দেওয়া হয়নি!');
+      commCallRoomId = null;
+      return;
+    }
 
     document.getElementById('coAvatar').style.display = 'none';
     document.getElementById('commCallAvatarBig')?.remove();
     document.getElementById('coAudioBg').insertAdjacentHTML('afterbegin', `<div class="co-avatar ringing" id="commCallAvatarBig" style="background:#6c63ff;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:700">${commInitials(commCurrentPeer.name)}</div>`);
     document.getElementById('coName').textContent = commCurrentPeer.name;
     setCoStatus('Calling...', false);
-    document.getElementById('callOverlay').classList.add('open');
 
-    soundEngine.playDialTone();
+    document.getElementById('camBtn').style.display = isVideo ? 'flex' : 'none';
+    document.getElementById('camLbl').style.display = isVideo ? 'block' : 'none';
+    document.getElementById('flipBtn').style.display = isVideo ? 'flex' : 'none';
+    document.getElementById('flipLbl').style.display = isVideo ? 'block' : 'none';
 
-    if(type === 'video'){
-      document.getElementById('localVideo').srcObject = commLocalStream;
+    const lv = document.getElementById('localVideo'), rv = document.getElementById('remoteVideo'), ra = document.getElementById('remoteAudio');
+    if(isVideo){
+      lv.srcObject = commLocalStream;
       showVideoUI();
+    } else {
+      document.getElementById('coAudioBg').classList.remove('hidden');
+      rv.classList.add('hidden');
+      lv.classList.add('hidden');
     }
 
+    document.getElementById('callOverlay').classList.add('open');
+    soundEngine.playDialTone();
+
     commPC = new RTCPeerConnection(ICE_SERVERS);
+    commCallerRemoteDescSet = false;
+    commPendingCalleeCandidates = [];
+
     commLocalStream.getTracks().forEach(t => commPC.addTrack(t, commLocalStream));
+
     commPC.ontrack = e => {
-      document.getElementById('remoteVideo').srcObject = e.streams[0];
+      if(rv && rv.srcObject !== e.streams[0]){
+        rv.srcObject = e.streams[0];
+        rv.play().catch(()=>{});
+      }
+      if(ra && ra.srcObject !== e.streams[0]){
+        ra.srcObject = e.streams[0];
+        ra.play().catch(()=>{});
+      }
+      if(isVideo) showVideoUI();
       setCoStatus('সংযুক্ত হয়েছে ✅', true);
       soundEngine.stopCallSounds();
       soundEngine.playConnected();
       startTimerUI();
-    };
-    commPC.onicecandidate = e => {
-      if(e.candidate) push(ref(rtdb, `community_calls/${commCallRoomId}/callerCandidates`), e.candidate.toJSON()).catch(()=>{});
+      const bigAv = document.getElementById('commCallAvatarBig');
+      if(bigAv) bigAv.classList.remove('ringing');
     };
 
-    const offer = await commPC.createOffer();
+    commPC.onicecandidate = e => {
+      if(e.candidate){
+        push(ref(rtdb, `community_calls/${commCallRoomId}/callerCandidates`), e.candidate.toJSON()).catch(()=>{});
+      }
+    };
+
+    commPC.onconnectionstatechange = () => {
+      if(commPC.connectionState === 'connected'){
+        clearTimeout(commCallTimeout);
+        soundEngine.stopCallSounds();
+        soundEngine.playConnected();
+        setCoStatus('সংযুক্ত হয়েছে ✅', true);
+        startTimerUI();
+        const bigAv = document.getElementById('commCallAvatarBig');
+        if(bigAv) bigAv.classList.remove('ringing');
+      } else if(commPC.connectionState === 'failed' || commPC.connectionState === 'disconnected'){
+        setCoStatus('সংযোগ বিচ্ছিন্ন...', false);
+      }
+    };
+
+    const offer = await commPC.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: isVideo
+    });
     await commPC.setLocalDescription(offer);
 
     await set(ref(rtdb, `community_calls/${commCallRoomId}`), {
-      callerUid: commUid, callerName: commProfile.name,
-      calleeUid: commCurrentPeer.uid, calleeName: commCurrentPeer.name,
-      type, status: 'ringing', offer: { type: offer.type, sdp: offer.sdp }, ts: Date.now()
+      callerUid: commUid,
+      callerName: (commProfile && commProfile.name) || (localStorage.getItem('comm_name') || 'User'),
+      calleeUid: commCurrentPeer.uid,
+      calleeName: commCurrentPeer.name,
+      type,
+      status: 'ringing',
+      offer: { type: offer.type, sdp: offer.sdp },
+      ts: Date.now()
     });
 
     clearTimeout(commCallTimeout);
@@ -2381,37 +2459,220 @@ if(document.readyState === 'complete' || document.readyState === 'interactive'){
       }
     }, 35000);
 
-    onValue(ref(rtdb, `community_calls/${commCallRoomId}`), async snap => {
+    if(unsubCommCallDoc){ unsubCommCallDoc(); unsubCommCallDoc = null; }
+    unsubCommCallDoc = onValue(ref(rtdb, `community_calls/${commCallRoomId}`), async snap => {
       const d = snap.val();
       if(!d){ window.commEndCall(true); return; }
+      if(d.status === 'rejected'){
+        soundEngine.stopCallSounds();
+        setCoStatus('কল বাতিল করা হয়েছে', false);
+        setTimeout(() => window.commEndCall(true), 1200);
+        return;
+      }
+      if(d.status === 'ended'){
+        window.commEndCall(true);
+        return;
+      }
       if(d.status === 'accepted' && d.answer && commPC && !commPC.currentRemoteDescription){
         clearTimeout(commCallTimeout);
-        try{ await commPC.setRemoteDescription(new RTCSessionDescription(d.answer)); }catch(e){}
-      }
-      if(d.status === 'rejected' || d.status === 'ended'){
-        window.commEndCall(true);
+        const bigAv = document.getElementById('commCallAvatarBig');
+        if(bigAv) bigAv.classList.remove('ringing');
+        setCoStatus('সংযোগ হচ্ছে...', false);
+        try{
+          await commPC.setRemoteDescription(new RTCSessionDescription(d.answer));
+          commCallerRemoteDescSet = true;
+          for(const c of commPendingCalleeCandidates){
+            try{ await commPC.addIceCandidate(new RTCIceCandidate(c)); }catch(err){}
+          }
+          commPendingCalleeCandidates = [];
+        }catch(e){
+          console.error('Caller setRemoteDescription error:', e);
+        }
       }
     });
 
-    onValue(ref(rtdb, `community_calls/${commCallRoomId}/calleeCandidates`), snap => {
-      if(snap.exists() && commPC){
-        snap.forEach(c => commPC.addIceCandidate(new RTCIceCandidate(c.val())).catch(()=>{}));
-      }
+    if(unsubCommCalleeCands){ unsubCommCalleeCands(); unsubCommCalleeCands = null; }
+    unsubCommCalleeCands = onValue(ref(rtdb, `community_calls/${commCallRoomId}/calleeCandidates`), snap => {
+      if(!snap.exists() || !commPC) return;
+      snap.forEach(c => {
+        const cand = c.val();
+        if(!cand) return;
+        if(commCallerRemoteDescSet && commPC.remoteDescription){
+          commPC.addIceCandidate(new RTCIceCandidate(cand)).catch(()=>{});
+        } else {
+          commPendingCalleeCandidates.push(cand);
+        }
+      });
     });
   };
 
+  window.commAcceptCall = async function(roomId){
+    const targetRoomId = roomId || window._incomingCommRoom;
+    hideAdminIncoming();
+    if(!targetRoomId) return;
+
+    try{
+      const snap = await get(ref(rtdb, `community_calls/${targetRoomId}`));
+      const d = snap.val();
+      if(!d || !d.offer || d.status !== 'ringing'){
+        toast('❌ কলটি বাতিল করা হয়েছে বা পাওয়া যায়নি!');
+        return;
+      }
+
+      commCallRoomId = targetRoomId;
+      const isVideo = (d.type === 'video');
+
+      try{
+        commLocalStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          video: isVideo ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } : false
+        });
+      }catch(e){
+        toast('❌ ক্যামেরা বা মাইক্রোফোনের পারমিশন দেওয়া হয়নি!');
+        try{ await update(ref(rtdb, `community_calls/${targetRoomId}`), { status: 'rejected' }); }catch(err){}
+        commCallRoomId = null;
+        return;
+      }
+
+      document.getElementById('coAvatar').style.display = 'none';
+      document.getElementById('commCallAvatarBig')?.remove();
+      document.getElementById('coAudioBg').insertAdjacentHTML('afterbegin', `<div class="co-avatar" id="commCallAvatarBig" style="background:#6c63ff;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:700">${commInitials(d.callerName)}</div>`);
+      document.getElementById('coName').textContent = d.callerName || 'ইউজার';
+      setCoStatus('সংযোগ হচ্ছে...', false);
+
+      document.getElementById('camBtn').style.display = isVideo ? 'flex' : 'none';
+      document.getElementById('camLbl').style.display = isVideo ? 'block' : 'none';
+      document.getElementById('flipBtn').style.display = isVideo ? 'flex' : 'none';
+      document.getElementById('flipLbl').style.display = isVideo ? 'block' : 'none';
+
+      const lv = document.getElementById('localVideo'), rv = document.getElementById('remoteVideo'), ra = document.getElementById('remoteAudio');
+      if(isVideo){
+        lv.srcObject = commLocalStream;
+        showVideoUI();
+      } else {
+        document.getElementById('coAudioBg').classList.remove('hidden');
+        rv.classList.add('hidden');
+        lv.classList.add('hidden');
+      }
+
+      document.getElementById('callOverlay').classList.add('open');
+
+      commPC = new RTCPeerConnection(ICE_SERVERS);
+      commCalleeRemoteDescSet = false;
+      commPendingCallerCandidates = [];
+
+      commLocalStream.getTracks().forEach(t => commPC.addTrack(t, commLocalStream));
+
+      commPC.ontrack = e => {
+        if(rv && rv.srcObject !== e.streams[0]){
+          rv.srcObject = e.streams[0];
+          rv.play().catch(()=>{});
+        }
+        if(ra && ra.srcObject !== e.streams[0]){
+          ra.srcObject = e.streams[0];
+          ra.play().catch(()=>{});
+        }
+        if(isVideo) showVideoUI();
+        setCoStatus('সংযুক্ত হয়েছে ✅', true);
+        soundEngine.stopCallSounds();
+        soundEngine.playConnected();
+        startTimerUI();
+      };
+
+      commPC.onicecandidate = e => {
+        if(e.candidate){
+          push(ref(rtdb, `community_calls/${targetRoomId}/calleeCandidates`), e.candidate.toJSON()).catch(()=>{});
+        }
+      };
+
+      commPC.onconnectionstatechange = () => {
+        if(commPC.connectionState === 'connected'){
+          soundEngine.stopCallSounds();
+          soundEngine.playConnected();
+          setCoStatus('সংযুক্ত হয়েছে ✅', true);
+          startTimerUI();
+        } else if(commPC.connectionState === 'failed' || commPC.connectionState === 'disconnected'){
+          setCoStatus('সংযোগ বিচ্ছিন্ন...', false);
+        }
+      };
+
+      await commPC.setRemoteDescription(new RTCSessionDescription(d.offer));
+      commCalleeRemoteDescSet = true;
+
+      for(const cand of commPendingCallerCandidates){
+        try{ await commPC.addIceCandidate(new RTCIceCandidate(cand)); }catch(err){}
+      }
+      commPendingCallerCandidates = [];
+
+      const answer = await commPC.createAnswer();
+      await commPC.setLocalDescription(answer);
+
+      await update(ref(rtdb, `community_calls/${targetRoomId}`), {
+        status: 'accepted',
+        answer: { type: answer.type, sdp: answer.sdp }
+      });
+
+      if(unsubCommCallerCands){ unsubCommCallerCands(); unsubCommCallerCands = null; }
+      unsubCommCallerCands = onValue(ref(rtdb, `community_calls/${targetRoomId}/callerCandidates`), snap => {
+        if(!snap.exists() || !commPC) return;
+        snap.forEach(c => {
+          const cand = c.val();
+          if(!cand) return;
+          if(commCalleeRemoteDescSet && commPC.remoteDescription){
+            commPC.addIceCandidate(new RTCIceCandidate(cand)).catch(()=>{});
+          } else {
+            commPendingCallerCandidates.push(cand);
+          }
+        });
+      });
+
+      if(unsubCommCallDoc){ unsubCommCallDoc(); unsubCommCallDoc = null; }
+      unsubCommCallDoc = onValue(ref(rtdb, `community_calls/${targetRoomId}`), snap => {
+        const cd = snap.val();
+        if(!cd || cd.status === 'ended' || cd.status === 'rejected'){
+          window.commEndCall(true);
+        }
+      });
+
+    }catch(err){
+      console.error('commAcceptCall error:', err);
+      toast('❌ সংযোগে সমস্যা হয়েছে: ' + err.message);
+      window.commEndCall(true);
+    }
+  };
+
+  window.commRejectCall = async function(roomId){
+    const targetRoomId = roomId || window._incomingCommRoom;
+    hideAdminIncoming();
+    if(targetRoomId){
+      try{
+        await update(ref(rtdb, `community_calls/${targetRoomId}`), { status: 'rejected' });
+      }catch(e){}
+    }
+  };
+
   function commListenIncomingCalls(){
-    onValue(ref(rtdb, 'community_calls'), snap => {
-      if(!snap.exists()) return;
+    if(!commUid) return;
+    if(unsubIncomingCommCalls) unsubIncomingCommCalls();
+
+    unsubIncomingCommCalls = onValue(ref(rtdb, 'community_calls'), snap => {
+      if(!snap.exists()){
+        if(window._incomingCallType === 'community') hideAdminIncoming();
+        return;
+      }
+      let foundActive = false;
       snap.forEach(child => {
         const d = child.val(), rId = child.key;
         if(d && d.calleeUid === commUid && d.status === 'ringing'){
-          if(!commCallRoomId && !document.getElementById('adminCallToast').classList.contains('show')){
-            showAdminIncoming(rId, { name: d.callerName, type: d.type });
-            window._incomingCommRoom = rId;
+          foundActive = true;
+          if(!commCallRoomId && window._incomingCommRoom !== rId){
+            showAdminIncoming(rId, { name: d.callerName, type: d.type }, 'community');
           }
         }
       });
+      if(!foundActive && window._incomingCallType === 'community'){
+        hideAdminIncoming();
+      }
     });
   }
 
@@ -2420,15 +2681,41 @@ if(document.readyState === 'complete' || document.readyState === 'interactive'){
     soundEngine.stopCallSounds();
     soundEngine.playEnded();
     cleanupCallUI();
-    document.getElementById('coAvatar').style.display = 'block';
-    if(commPC){ commPC.close(); commPC = null; }
-    if(commLocalStream){ commLocalStream.getTracks().forEach(t => t.stop()); commLocalStream = null; }
-    if(commCallRoomId && !silent){
-      try{ await update(ref(rtdb, `community_calls/${commCallRoomId}`), { status: 'ended' }); }catch(e){}
-      setTimeout(() => remove(ref(rtdb, `community_calls/${commCallRoomId}`)).catch(()=>{}), 800);
-    }
+
+    if(unsubCommCallDoc){ unsubCommCallDoc(); unsubCommCallDoc = null; }
+    if(unsubCommCalleeCands){ unsubCommCalleeCands(); unsubCommCalleeCands = null; }
+    if(unsubCommCallerCands){ unsubCommCallerCands(); unsubCommCallerCands = null; }
+
+    const roomIdToEnd = commCallRoomId;
     commCallRoomId = null;
+
+    if(commPC){
+      try{ commPC.close(); }catch(e){}
+      commPC = null;
+    }
+    if(commLocalStream){
+      commLocalStream.getTracks().forEach(t => t.stop());
+      commLocalStream = null;
+    }
+
+    if(roomIdToEnd && !silent){
+      try{ await update(ref(rtdb, `community_calls/${roomIdToEnd}`), { status: 'ended' }); }catch(e){}
+      setTimeout(() => remove(ref(rtdb, `community_calls/${roomIdToEnd}`)).catch(()=>{}), 1000);
+    }
   };
+
+  // Auto-init community call listener in background if user is already registered
+  if(commUid){
+    get(ref(rtdb, `community_users/${commUid}`)).then(snap => {
+      if(snap.exists()){
+        commProfile = snap.val();
+        set(ref(rtdb, `community_users/${commUid}/online`), true);
+        set(ref(rtdb, `community_users/${commUid}/lastSeen`), Date.now());
+        onDisconnect(ref(rtdb, `community_users/${commUid}/online`)).set(false);
+        commListenIncomingCalls();
+      }
+    }).catch(()=>{});
+  }
 
   /* ═════════════════════ COMPLETE ADMIN PANEL SYSTEM ═════════════════════ */
   window.openAdminPanel = () => {
@@ -2663,30 +2950,47 @@ if(document.readyState === 'complete' || document.readyState === 'interactive'){
   }
 
   /* Admin Incoming & Outgoing Calls */
-  function showAdminIncoming(callSid, data){
-    document.getElementById('actName').textContent = data.name || 'একজন ভিজিটর';
+  function showAdminIncoming(callSid, data, type = 'admin'){
+    document.getElementById('actName').textContent = data.name || (type === 'community' ? 'ইউজার' : 'একজন ভিজিটর');
     document.getElementById('actType').textContent = data.type === 'video' ? '📹 Video call' : '🎙️ Audio call';
     document.getElementById('adminCallToast').classList.add('show');
     window._incomingCallSid = callSid;
+    window._incomingCallType = type;
+    if(type === 'community'){
+      window._incomingCommRoom = callSid;
+    }
     soundEngine.playRingTone();
   }
   function hideAdminIncoming(){
     document.getElementById('adminCallToast').classList.remove('show');
     window._incomingCallSid = null;
+    window._incomingCallType = null;
+    window._incomingCommRoom = null;
     soundEngine.stopCallSounds();
   }
 
   onValue(ref(rtdb, 'calls'), snap => {
-    if(!snap.exists()){ hideAdminIncoming(); return; }
+    if(!snap.exists()){
+      if(window._incomingCallType === 'admin') hideAdminIncoming();
+      return;
+    }
+    let foundRinging = false;
     snap.forEach(c => {
       const d = c.val(), id = c.key;
       if(d && d.status === 'ringing' && !activeCallSid){
-        showAdminIncoming(id, d);
+        foundRinging = true;
+        showAdminIncoming(id, d, 'admin');
       }
     });
+    if(!foundRinging && window._incomingCallType === 'admin'){
+      hideAdminIncoming();
+    }
   });
 
   window.adminAcceptCall = async () => {
+    if(window._incomingCallType === 'community' && window._incomingCommRoom){
+      return window.commAcceptCall(window._incomingCommRoom);
+    }
     const callSid = window._incomingCallSid;
     hideAdminIncoming();
     if(!callSid) return;
@@ -2731,6 +3035,9 @@ if(document.readyState === 'complete' || document.readyState === 'interactive'){
   };
 
   window.adminRejectCall = async () => {
+    if(window._incomingCallType === 'community' && window._incomingCommRoom){
+      return window.commRejectCall(window._incomingCommRoom);
+    }
     const callSid = window._incomingCallSid;
     hideAdminIncoming();
     if(callSid){
